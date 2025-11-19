@@ -134,7 +134,7 @@ const LandingPage = () => {
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Your Mental Health Matters</h2>
           <p className="text-xl text-white mb-8">
-            Reach out to us for support and take the first step toward a healthier mind.
+            Reach out to us for support and take the first step towards a healthier mind.
           </p>
           <button
             onClick={() => navigate('/register')}
