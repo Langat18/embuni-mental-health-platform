@@ -1,7 +1,7 @@
 // frontend/src/pages/LandingPage.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Shield, Calendar, BookOpen, Phone } from 'lucide-react';
+import { MessageCircle, Shield, Calendar, Heart } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -12,11 +12,13 @@ const LandingPage = () => {
       <nav className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center">
-              <Heart className="w-7 h-7 text-white" />
-            </div>
+            <img 
+              src="/assets/images/embunilogo.png" 
+              alt="University of Embu Logo" 
+              className="w-14 h-14 object-contain"
+            />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">UoE Counseling</h1>
+              <h1 className="text-xl font-bold text-gray-900">Embuni Counseling</h1>
               <p className="text-xs text-gray-500">University of Embu</p>
             </div>
           </div>
@@ -41,7 +43,7 @@ const LandingPage = () => {
       <section className="max-w-7xl mx-auto px-4 py-20 text-center">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Welcome to The UoE Mental Health & Counseling Center
+            University of Embu Mental Health & Counseling Center
           </h1>
           <p className="text-xl text-gray-600 mb-8">
             Supporting mental health and wellbeing through professional counseling services.
@@ -58,7 +60,11 @@ const LandingPage = () => {
         <div className="mt-16 max-w-3xl mx-auto">
           <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl p-12 flex items-center justify-center">
             <div className="text-center">
-              <Heart className="w-32 h-32 text-green-600 mx-auto mb-4" />
+              <img 
+                src="/assets/images/embunilogo.png" 
+                alt="University of Embu" 
+                className="w-32 h-32 mx-auto mb-4 object-contain"
+              />
               <p className="text-gray-600 italic">Your mental health matters</p>
             </div>
           </div>
@@ -171,7 +177,7 @@ const LandingPage = () => {
             <span>•</span>
             <a href="#" className="hover:text-white transition">Contact Support</a>
             <span>•</span>
-            <a href="#" className="hover:text-white transition">Emergency: 0800-XXX-XXX</a>
+            <a href="#" className="hover:text-white transition">Emergency: +25417456116</a>
           </div>
         </div>
       </footer>

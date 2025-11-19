@@ -129,7 +129,7 @@ const StudentRegisterPage = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="john.kamau@students.uoem.ac.ke"
+              placeholder="99999@student.embuni.ac.ke"
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
