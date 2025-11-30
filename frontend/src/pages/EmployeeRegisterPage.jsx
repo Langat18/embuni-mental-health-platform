@@ -1,10 +1,10 @@
-// frontend/src/pages/StudentRegisterPage.jsx
+// frontend/src/pages/EmployeeRegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, BookOpen, Users, Check } from 'lucide-react';
-import { registerStudent } from '../services/authService';
+import { registerEmployee } from '../services/authService';
 
-const StudentRegisterPage = () => {
+const EmployeeRegisterPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ const StudentRegisterPage = () => {
   const [formData, setFormData] = useState({
     // Step 1: Account
     username: '',
-    universityId: '',
+    staffId: '',
     email: '',
     password: '',
     
@@ -44,7 +44,7 @@ const StudentRegisterPage = () => {
   const validateStep = (step) => {
     switch(step) {
       case 1:
-        if (!formData.username || !formData.universityId || !formData.email || !formData.password) {
+        if (!formData.username || !formData.staffId || !formData.email || !formData.password) {
           setError('Please fill all required fields');
           return false;
         }
@@ -93,9 +93,9 @@ const StudentRegisterPage = () => {
     setLoading(true);
 
     try {
-      await registerStudent({
+      await registerEmployee({
         username: formData.username,
-        university_id: formData.universityId,
+        staff_id: formData.staffId,
         email: formData.email,
         password: formData.password,
         full_name: formData.fullName,
@@ -108,7 +108,7 @@ const StudentRegisterPage = () => {
         kin_phone_number: formData.kinPhoneNumber
       });
 
-      alert('Registration successful! Please check your email to verify your account.');
+      alert('Registration successful! Your account will be activated by the administrator.');
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Registration failed. Please try again.');
@@ -118,7 +118,7 @@ const StudentRegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
         {/* Back Button */}
         <button
@@ -132,7 +132,7 @@ const StudentRegisterPage = () => {
         <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">Create your account</h2>
         <p className="text-center text-gray-600 mb-2">
           Already have an account?{' '}
-          <button onClick={() => navigate('/login')} className="text-blue-600 hover:underline">
+          <button onClick={() => navigate('/login')} className="text-green-600 hover:underline">
             Sign in
           </button>
         </p>
@@ -143,7 +143,7 @@ const StudentRegisterPage = () => {
           {/* Step 1 */}
           <div className="flex flex-col items-center flex-1">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
-              currentStep >= 1 ? 'bg-blue-600' : 'bg-gray-200'
+              currentStep >= 1 ? 'bg-green-600' : 'bg-gray-200'
             }`}>
               {currentStep > 1 ? (
                 <Check className="w-6 h-6 text-white" />
@@ -151,19 +151,19 @@ const StudentRegisterPage = () => {
                 <User className={`w-6 h-6 ${currentStep >= 1 ? 'text-white' : 'text-gray-400'}`} />
               )}
             </div>
-            <p className={`text-xs mt-2 font-medium ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-2 font-medium ${currentStep >= 1 ? 'text-green-600' : 'text-gray-400'}`}>
               Account
             </p>
             <p className="text-xs text-gray-400">Basic account information</p>
           </div>
 
           {/* Connector Line */}
-          <div className={`h-1 flex-1 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+          <div className={`h-1 flex-1 mx-2 ${currentStep >= 2 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
 
           {/* Step 2 */}
           <div className="flex flex-col items-center flex-1">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
-              currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'
+              currentStep >= 2 ? 'bg-green-600' : 'bg-gray-200'
             }`}>
               {currentStep > 2 ? (
                 <Check className="w-6 h-6 text-white" />
@@ -171,23 +171,23 @@ const StudentRegisterPage = () => {
                 <BookOpen className={`w-6 h-6 ${currentStep >= 2 ? 'text-white' : 'text-gray-400'}`} />
               )}
             </div>
-            <p className={`text-xs mt-2 font-medium ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-2 font-medium ${currentStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
               Profile
             </p>
             <p className="text-xs text-gray-400">Personal details</p>
           </div>
 
           {/* Connector Line */}
-          <div className={`h-1 flex-1 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+          <div className={`h-1 flex-1 mx-2 ${currentStep >= 3 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
 
           {/* Step 3 */}
           <div className="flex flex-col items-center flex-1">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
-              currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'
+              currentStep >= 3 ? 'bg-green-600' : 'bg-gray-200'
             }`}>
               <Users className={`w-6 h-6 ${currentStep >= 3 ? 'text-white' : 'text-gray-400'}`} />
             </div>
-            <p className={`text-xs mt-2 font-medium ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-2 font-medium ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
               Next of Kin
             </p>
             <p className="text-xs text-gray-400">Emergency contact</p>
@@ -221,7 +221,7 @@ const StudentRegisterPage = () => {
                     onChange={handleChange}
                     placeholder="john_kamau"
                     required
-                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -232,12 +232,12 @@ const StudentRegisterPage = () => {
                 </label>
                 <input
                   type="text"
-                  name="universityId"
-                  value={formData.universityId}
+                  name="staffId"
+                  value={formData.staffId}
                   onChange={handleChange}
-                  placeholder="ST/0123/2020"
+                  placeholder="X1234"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -250,9 +250,9 @@ const StudentRegisterPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="123456.student@embuni.ac.ke"
+                  placeholder="john.kamau@uoem.ac.ke"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -267,14 +267,14 @@ const StudentRegisterPage = () => {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
+                className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition"
               >
                 Next
               </button>
@@ -297,7 +297,7 @@ const StudentRegisterPage = () => {
                   onChange={handleChange}
                   placeholder="John Kamau"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -312,7 +312,7 @@ const StudentRegisterPage = () => {
                   onChange={handleChange}
                   placeholder="+254 712 345 678"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -325,7 +325,7 @@ const StudentRegisterPage = () => {
                   value={formData.gender}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 >
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -344,7 +344,7 @@ const StudentRegisterPage = () => {
                   value={formData.studentLevel}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 >
                   <option value="">Select student level</option>
                   <option value="undergraduate">Undergraduate</option>
@@ -363,7 +363,7 @@ const StudentRegisterPage = () => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition"
                 >
                   Next
                 </button>
@@ -387,7 +387,7 @@ const StudentRegisterPage = () => {
                   onChange={handleChange}
                   placeholder="Jane Kamau"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -400,13 +400,13 @@ const StudentRegisterPage = () => {
                   value={formData.kinRelationship}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 >
                   <option value="">Select relationship</option>
-                  <option value="parent">Parent</option>
-                  <option value="guardian">Guardian</option>
-                  <option value="sibling">Sibling</option>
                   <option value="spouse">Spouse</option>
+                  <option value="parent">Parent</option>
+                  <option value="sibling">Sibling</option>
+                  <option value="child">Child</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -421,7 +421,7 @@ const StudentRegisterPage = () => {
                   value={formData.kinEmail}
                   onChange={handleChange}
                   placeholder="jane.kamau@example.com"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -436,12 +436,12 @@ const StudentRegisterPage = () => {
                   onChange={handleChange}
                   placeholder="+254 712 345 678"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                 />
               </div>
 
               {/* Consent */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -449,11 +449,11 @@ const StudentRegisterPage = () => {
                     checked={formData.consent}
                     onChange={handleChange}
                     required
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 mt-0.5"
+                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500 mt-0.5"
                   />
                   <span className="text-sm text-gray-700">
-                    I consent to the collection and processing of my personal data for counseling purposes. 
-                    All sessions are confidential and my data will be handled according to the Data Protection Act.
+                    I consent to the collection and processing of my personal data for employment and administrative purposes. 
+                    All data will be handled according to the Data Protection Act and university policies.
                   </span>
                 </label>
               </div>
@@ -469,7 +469,7 @@ const StudentRegisterPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center gap-2">
@@ -499,4 +499,4 @@ const StudentRegisterPage = () => {
   );
 };
 
-export default StudentRegisterPage;
+export default EmployeeRegisterPage;
