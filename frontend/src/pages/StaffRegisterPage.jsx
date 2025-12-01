@@ -133,7 +133,8 @@ const StaffRegisterPage = () => {
             <Shield className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Staff Registration</h1>
-          <p className="text-gray-600">Create your account to provide counseling services</p>
+          <p className="text-gray-600">Create your account to access our seervices
+          </p>
         </div>
 
         {/* Progress Indicator */}
@@ -208,7 +209,7 @@ const StaffRegisterPage = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="john@university.ac.ke"
+                      placeholder="john.doe@embuni.ac.ke"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
@@ -289,7 +290,7 @@ const StaffRegisterPage = () => {
                       name="employeeId"
                       value={formData.employeeId}
                       onChange={handleChange}
-                      placeholder="EMP123456"
+                      placeholder="X012345"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
