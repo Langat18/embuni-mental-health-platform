@@ -7,7 +7,14 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen" style={{
+      backgroundImage: 'url(/assets/images/image12.webp)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
+      {/* Overlay */}
+      <div className="min-h-screen bg-black/40">
       {/* Navigation */}
       <nav className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -42,10 +49,10 @@ const LandingPage = () => {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 py-20 text-center">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
             University of Embu Mental Health & Counseling Center
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-white mb-8 drop-shadow-lg">
             Supporting mental health and wellbeing through professional counseling services.
           </p>
           <button
@@ -57,24 +64,24 @@ const LandingPage = () => {
         </div>
 
         {/* Hero Image Placeholder */}
-        <div className="mt-16 max-w-3xl mx-auto">
-          <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl p-12 flex items-center justify-center">
+       {/* <div className="mt-16 max-w-3xl mx-auto">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-12 flex items-center justify-center">
             <div className="text-center">
               <img 
                 src="/assets/images/embunilogo.png" 
                 alt="University of Embu" 
                 className="w-32 h-32 mx-auto mb-4 object-contain"
               />
-              <p className="text-gray-600 italic">Your mental health matters</p>
+              <p className="text-gray-700 italic">Your mental health matters</p>
             </div>
           </div>
-        </div>
+        </div>*/}
       </section>
 
       {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-xl shadow-sm text-center hover:shadow-md transition">
+          <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md text-center hover:shadow-lg transition">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="w-8 h-8 text-blue-600" />
             </div>
@@ -82,7 +89,7 @@ const LandingPage = () => {
             <p className="text-gray-600">Access to qualified and experienced counseling professionals</p>
           </div>
 
-          <div className="bg-white p-8 rounded-xl shadow-sm text-center hover:shadow-md transition">
+          <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md text-center hover:shadow-lg transition">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-8 h-8 text-green-600" />
             </div>
@@ -90,7 +97,7 @@ const LandingPage = () => {
             <p className="text-gray-600">Book appointments at your convenience</p>
           </div>
 
-          <div className="bg-white p-8 rounded-xl shadow-sm text-center hover:shadow-md transition">
+          <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md text-center hover:shadow-lg transition">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-purple-600" />
             </div>
@@ -101,27 +108,27 @@ const LandingPage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-white py-16">
+      <section className="bg-black/40 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
+          <h2 className="text-3xl font-bold text-center text-white mb-4 drop-shadow-lg">
             Empowering Mental Well-being
           </h2>
-          <p className="text-center text-gray-600 mb-12">
+          <p className="text-center text-white mb-12 drop-shadow-lg">
             Discover how our counseling services have made a difference in our community.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-xl">
+            <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md">
               <div className="text-5xl font-bold text-blue-600 mb-2">500+</div>
               <div className="text-gray-700 font-medium">Sessions Conducted</div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-xl">
+            <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md">
               <div className="text-5xl font-bold text-green-600 mb-2">200+</div>
               <div className="text-gray-700 font-medium">Students Served</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-xl">
+            <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md">
               <div className="text-5xl font-bold text-purple-600 mb-2">98%</div>
               <div className="text-gray-700 font-medium">Satisfaction Rate</div>
             </div>
@@ -148,20 +155,20 @@ const LandingPage = () => {
       {/* Community Section */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Join Our Community</h2>
-          <p className="text-gray-600">
+          <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg">Join Our Community</h2>
+          <p className="text-white drop-shadow-lg">
             Explore resources, workshops, and support groups tailored to your needs.
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-12 text-center text-white">
-          <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
-          <p className="text-lg mb-8 text-blue-100">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-12 text-center shadow-lg">
+          <h3 className="text-2xl font-bold mb-4 text-gray-900">Ready to Get Started?</h3>
+          <p className="text-lg mb-8 text-gray-700">
             Sign up for a session or contact our team for personalized support.
           </p>
           <button
             onClick={() => navigate('/register')}
-            className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition"
+            className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
           >
             Book a Session
           </button>
@@ -181,6 +188,7 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 };

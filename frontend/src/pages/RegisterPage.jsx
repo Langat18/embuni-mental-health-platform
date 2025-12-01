@@ -1,4 +1,3 @@
-// frontend/src/pages/RegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Heart, Users } from 'lucide-react';
@@ -42,7 +41,6 @@ const RegisterPage = () => {
 
         {/* Registration Options */}
         <div className="space-y-4">
-          {/* Student Registration */}
           <button
             onClick={handleStudentRegister}
             className="w-full bg-white rounded-xl shadow-md hover:shadow-xl transition p-6 text-left group border-2 border-transparent hover:border-blue-500"
@@ -60,8 +58,6 @@ const RegisterPage = () => {
               <ArrowRight className="w-6 h-6 text-gray-400 group-hover:text-blue-600 transition" />
             </div>
           </button>
-
-          {/* Staff Registration */}
           <button
             onClick={handleStaffRegister}
             className="w-full bg-white rounded-xl shadow-md hover:shadow-xl transition p-6 text-left group border-2 border-transparent hover:border-green-500"
@@ -72,8 +68,8 @@ const RegisterPage = () => {
                   <Heart className="w-8 h-8 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Register as Staff/Counselor</h2>
-                  <p className="text-gray-600 mt-1">Provide counseling services to students</p>
+                  <h2 className="text-2xl font-bold text-gray-900">Register as Staff</h2>
+                  <p className="text-gray-600 mt-1">Access our services and support</p>
                 </div>
               </div>
               <ArrowRight className="w-6 h-6 text-gray-400 group-hover:text-green-600 transition" />

@@ -1,4 +1,3 @@
-// frontend/src/pages/StaffRegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Shield, ArrowLeft } from 'lucide-react';
