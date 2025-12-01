@@ -1,9 +1,9 @@
-// frontend/src/pages/StudentRegisterPage.jsx
+// frontend/src/pages/StaffRegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Shield, ArrowLeft } from 'lucide-react';
 
-const StudentRegisterPage = () => {
+const StaffRegisterPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -15,9 +15,9 @@ const StudentRegisterPage = () => {
     confirmPassword: '',
     fullName: '',
     phoneNumber: '',
-    studentId: '',
-    courseOfStudy: '',
-    yearOfStudy: '',
+    employeeId: '',
+    department: '',
+    position: '',
     kinName: '',
     kinRelationship: '',
     kinEmail: '',
@@ -47,7 +47,7 @@ const StudentRegisterPage = () => {
         }
         break;
       case 2:
-        if (!formData.fullName || !formData.phoneNumber || !formData.studentId) {
+        if (!formData.fullName || !formData.phoneNumber || !formData.employeeId) {
           setError('Please fill all required fields');
           return false;
         }
@@ -82,7 +82,7 @@ const StudentRegisterPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register/student', {
+      const response = await fetch('http://localhost:8000/api/auth/register/staff', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,14 +93,14 @@ const StudentRegisterPage = () => {
           password: formData.password,
           full_name: formData.fullName,
           phone_number: formData.phoneNumber,
-          student_id: formData.studentId,
-          course_of_study: formData.courseOfStudy,
-          year_of_study: formData.yearOfStudy,
+          employee_id: formData.employeeId,
+          department: formData.department,
+          position: formData.position,
           kin_name: formData.kinName,
           kin_relationship: formData.kinRelationship,
           kin_email: formData.kinEmail,
           kin_phone_number: formData.kinPhoneNumber,
-          role: 'student'
+          role: 'staff'
         }),
       });
 
@@ -120,7 +120,7 @@ const StudentRegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         {/* Back Button */}
         <Link to="/register" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8">
@@ -130,11 +130,11 @@ const StudentRegisterPage = () => {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-full mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Student Registration</h1>
-          <p className="text-gray-600">Create your account to access counseling services</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Staff Registration</h1>
+          <p className="text-gray-600">Create your account to provide counseling services</p>
         </div>
 
         {/* Progress Indicator */}
@@ -145,20 +145,20 @@ const StudentRegisterPage = () => {
                 <div className="flex flex-col items-center flex-1">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
                     currentStep >= step 
-                      ? 'bg-blue-600 text-white' 
+                      ? 'bg-green-600 text-white' 
                       : 'bg-gray-200 text-gray-400'
                   }`}>
                     {step}
                   </div>
                   <p className={`text-xs mt-2 font-medium ${
-                    currentStep >= step ? 'text-blue-600' : 'text-gray-400'
+                    currentStep >= step ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     {step === 1 ? 'Account' : step === 2 ? 'Profile' : 'Kin Info'}
                   </p>
                 </div>
                 {step < 3 && (
                   <div className={`h-1 flex-1 mx-2 ${
-                    currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                    currentStep > step ? 'bg-green-600' : 'bg-gray-200'
                   }`}></div>
                 )}
               </React.Fragment>
@@ -193,7 +193,7 @@ const StudentRegisterPage = () => {
                       value={formData.username}
                       onChange={handleChange}
                       placeholder="johndoe"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
                 </div>
@@ -210,7 +210,7 @@ const StudentRegisterPage = () => {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="john@university.ac.ke"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
                 </div>
@@ -228,7 +228,7 @@ const StudentRegisterPage = () => {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="Min. 8 characters"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -245,7 +245,7 @@ const StudentRegisterPage = () => {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         placeholder="Re-enter password"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -254,7 +254,7 @@ const StudentRegisterPage = () => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
                 >
                   Next: Profile Information →
                 </button>
@@ -276,22 +276,22 @@ const StudentRegisterPage = () => {
                     value={formData.fullName}
                     onChange={handleChange}
                     placeholder="John Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Student ID <span className="text-red-500">*</span>
+                      Employee ID <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      name="studentId"
-                      value={formData.studentId}
+                      name="employeeId"
+                      value={formData.employeeId}
                       onChange={handleChange}
-                      placeholder="STU123456"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      placeholder="EMP123456"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
 
@@ -307,7 +307,7 @@ const StudentRegisterPage = () => {
                         value={formData.phoneNumber}
                         onChange={handleChange}
                         placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -315,35 +315,30 @@ const StudentRegisterPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Course of Study
+                    Department
                   </label>
                   <input
                     type="text"
-                    name="courseOfStudy"
-                    value={formData.courseOfStudy}
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
-                    placeholder="e.g., Computer Science"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="e.g., Counseling Center"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Year of Study
+                    Position
                   </label>
-                  <select
-                    name="yearOfStudy"
-                    value={formData.yearOfStudy}
+                  <input
+                    type="text"
+                    name="position"
+                    value={formData.position}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Select year</option>
-                    <option value="first">First Year</option>
-                    <option value="second">Second Year</option>
-                    <option value="third">Third Year</option>
-                    <option value="fourth">Fourth Year</option>
-                    <option value="other">Other</option>
-                  </select>
+                    placeholder="e.g., Counselor, Psychologist"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                  />
                 </div>
 
                 <div className="flex gap-4">
@@ -357,7 +352,7 @@ const StudentRegisterPage = () => {
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
                   >
                     Next: Kin Information →
                   </button>
@@ -380,7 +375,7 @@ const StudentRegisterPage = () => {
                     value={formData.kinName}
                     onChange={handleChange}
                     placeholder="Jane Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   />
                 </div>
 
@@ -392,7 +387,7 @@ const StudentRegisterPage = () => {
                     name="kinRelationship"
                     value={formData.kinRelationship}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   >
                     <option value="">Select relationship</option>
                     <option value="parent">Parent</option>
@@ -416,7 +411,7 @@ const StudentRegisterPage = () => {
                         value={formData.kinEmail}
                         onChange={handleChange}
                         placeholder="jane@example.com"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -433,7 +428,7 @@ const StudentRegisterPage = () => {
                         value={formData.kinPhoneNumber}
                         onChange={handleChange}
                         placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -450,7 +445,7 @@ const StudentRegisterPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -470,7 +465,7 @@ const StudentRegisterPage = () => {
           <div className="text-center mt-6">
             <p className="text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+              <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold">
                 Sign in
               </Link>
             </p>
@@ -481,4 +476,4 @@ const StudentRegisterPage = () => {
   );
 };
 
-export default StudentRegisterPage;
+export default StaffRegisterPage;

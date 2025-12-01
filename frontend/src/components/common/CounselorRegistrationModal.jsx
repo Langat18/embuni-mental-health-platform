@@ -145,7 +145,7 @@ const CounselorRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
       resetAndClose();
 
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred during registration');
     } finally {
       setLoading(false);
     }

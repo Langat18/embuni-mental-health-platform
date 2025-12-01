@@ -1,13 +1,13 @@
-// frontend/src/pages/StudentRegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Phone, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Phone, Award, Briefcase, Shield } from 'lucide-react';
 
-const StudentRegisterPage = () => {
+const CounselorRegisterPage = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -15,14 +15,26 @@ const StudentRegisterPage = () => {
     confirmPassword: '',
     fullName: '',
     phoneNumber: '',
-    studentId: '',
-    courseOfStudy: '',
-    yearOfStudy: '',
-    kinName: '',
-    kinRelationship: '',
-    kinEmail: '',
-    kinPhoneNumber: ''
+    staffId: '',
+    department: '',
+    qualifications: '',
+    specializations: [],
+    yearsOfExperience: '',
+    bio: ''
   });
+
+  const availableSpecializations = [
+    'Academic Stress',
+    'Anxiety & Depression',
+    'Relationship Issues',
+    'Substance Abuse',
+    'Trauma & PTSD',
+    'Career Counseling',
+    'Family Issues',
+    'Grief & Loss',
+    'Self-Esteem',
+    'Peer Counseling'
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,11 +42,24 @@ const StudentRegisterPage = () => {
     setError('');
   };
 
+  const toggleSpecialization = (spec) => {
+    setFormData(prev => ({
+      ...prev,
+      specializations: prev.specializations.includes(spec)
+        ? prev.specializations.filter(s => s !== spec)
+        : [...prev.specializations, spec]
+    }));
+  };
+
   const validateStep = (step) => {
     switch(step) {
       case 1:
         if (!formData.username || !formData.email || !formData.password) {
           setError('Please fill all required fields');
+          return false;
+        }
+        if (!formData.email.endsWith('@embuni.ac.ke')) {
+          setError('Please use a valid university email (@embuni.ac.ke)');
           return false;
         }
         if (formData.password.length < 8) {
@@ -47,14 +72,14 @@ const StudentRegisterPage = () => {
         }
         break;
       case 2:
-        if (!formData.fullName || !formData.phoneNumber || !formData.studentId) {
+        if (!formData.fullName || !formData.phoneNumber || !formData.staffId || !formData.department) {
           setError('Please fill all required fields');
           return false;
         }
         break;
       case 3:
-        if (!formData.kinName || !formData.kinRelationship || !formData.kinEmail || !formData.kinPhoneNumber) {
-          setError('Please fill all kin information fields');
+        if (!formData.qualifications || formData.specializations.length === 0) {
+          setError('Please complete all professional details');
           return false;
         }
         break;
@@ -82,7 +107,7 @@ const StudentRegisterPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register/student', {
+      const response = await fetch('http://localhost:8000/api/auth/register/counselor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,14 +118,13 @@ const StudentRegisterPage = () => {
           password: formData.password,
           full_name: formData.fullName,
           phone_number: formData.phoneNumber,
-          student_id: formData.studentId,
-          course_of_study: formData.courseOfStudy,
-          year_of_study: formData.yearOfStudy,
-          kin_name: formData.kinName,
-          kin_relationship: formData.kinRelationship,
-          kin_email: formData.kinEmail,
-          kin_phone_number: formData.kinPhoneNumber,
-          role: 'student'
+          staff_id: formData.staffId,
+          department: formData.department,
+          qualifications: formData.qualifications,
+          specializations: formData.specializations,
+          years_of_experience: parseInt(formData.yearsOfExperience) || 0,
+          bio: formData.bio,
+          role: 'counselor'
         }),
       });
 
@@ -110,7 +134,7 @@ const StudentRegisterPage = () => {
         throw new Error(data.error?.message || 'Registration failed');
       }
 
-      alert('Registration successful! Please login to your account.');
+      alert('Registration successful! Your account is pending admin approval.');
       navigate('/login');
     } catch (err) {
       setError(err.message);
@@ -120,21 +144,15 @@ const StudentRegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        {/* Back Button */}
-        <Link to="/register" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </Link>
-
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-full mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Student Registration</h1>
-          <p className="text-gray-600">Create your account to access counseling services</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Counselor Registration</h1>
+          <p className="text-gray-600">Join the Embuni Mental Health Support Team</p>
         </div>
 
         {/* Progress Indicator */}
@@ -145,20 +163,20 @@ const StudentRegisterPage = () => {
                 <div className="flex flex-col items-center flex-1">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
                     currentStep >= step 
-                      ? 'bg-blue-600 text-white' 
+                      ? 'bg-green-600 text-white' 
                       : 'bg-gray-200 text-gray-400'
                   }`}>
                     {step}
                   </div>
                   <p className={`text-xs mt-2 font-medium ${
-                    currentStep >= step ? 'text-blue-600' : 'text-gray-400'
+                    currentStep >= step ? 'text-green-600' : 'text-gray-400'
                   }`}>
-                    {step === 1 ? 'Account' : step === 2 ? 'Profile' : 'Kin Info'}
+                    {step === 1 ? 'Account' : step === 2 ? 'Profile' : 'Professional'}
                   </p>
                 </div>
                 {step < 3 && (
                   <div className={`h-1 flex-1 mx-2 ${
-                    currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                    currentStep > step ? 'bg-green-600' : 'bg-gray-200'
                   }`}></div>
                 )}
               </React.Fragment>
@@ -192,15 +210,15 @@ const StudentRegisterPage = () => {
                       name="username"
                       value={formData.username}
                       onChange={handleChange}
-                      placeholder="johndoe"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      placeholder="john_kamau"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
+                    University Email <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -209,10 +227,11 @@ const StudentRegisterPage = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="john@university.ac.ke"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      placeholder="john.kamau@embuni.ac.ke"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">Must be a valid @embuni.ac.ke email</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -228,7 +247,7 @@ const StudentRegisterPage = () => {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="Min. 8 characters"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -245,7 +264,7 @@ const StudentRegisterPage = () => {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         placeholder="Re-enter password"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
                   </div>
@@ -254,7 +273,7 @@ const StudentRegisterPage = () => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
                 >
                   Next: Profile Information →
                 </button>
@@ -275,26 +294,12 @@ const StudentRegisterPage = () => {
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Dr. John Kamau"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Student ID <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="studentId"
-                      value={formData.studentId}
-                      onChange={handleChange}
-                      placeholder="STU123456"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    />
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone Number <span className="text-red-500">*</span>
@@ -307,43 +312,46 @@ const StudentRegisterPage = () => {
                         value={formData.phoneNumber}
                         onChange={handleChange}
                         placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Staff ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="staffId"
+                      value={formData.staffId}
+                      onChange={handleChange}
+                      placeholder="STF-12345"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Course of Study
+                    Department <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="courseOfStudy"
-                    value={formData.courseOfStudy}
-                    onChange={handleChange}
-                    placeholder="e.g., Computer Science"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Year of Study
-                  </label>
-                  <select
-                    name="yearOfStudy"
-                    value={formData.yearOfStudy}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Select year</option>
-                    <option value="first">First Year</option>
-                    <option value="second">Second Year</option>
-                    <option value="third">Third Year</option>
-                    <option value="fourth">Fourth Year</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none appearance-none"
+                    >
+                      <option value="">Select department</option>
+                      <option value="counseling_center">Counseling Center</option>
+                      <option value="psychology">Psychology Department</option>
+                      <option value="student_affairs">Student Affairs</option>
+                      <option value="health_services">Health Services</option>
+                      <option value="peer_support">Peer Support Program</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
@@ -357,86 +365,95 @@ const StudentRegisterPage = () => {
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition"
                   >
-                    Next: Kin Information →
+                    Next: Professional Details →
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3: Kin Information */}
+            {/* STEP 3: Professional Details */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Kin Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Professional Information</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kin Name <span className="text-red-500">*</span>
+                    Qualifications <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="kinName"
-                    value={formData.kinName}
-                    onChange={handleChange}
-                    placeholder="Jane Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
+                  <div className="relative">
+                    <Award className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <textarea
+                      name="qualifications"
+                      value={formData.qualifications}
+                      onChange={handleChange}
+                      placeholder="e.g., PhD in Clinical Psychology, Licensed Professional Counselor (LPC)"
+                      rows={3}
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Relationship <span className="text-red-500">*</span>
+                    Specializations <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="kinRelationship"
-                    value={formData.kinRelationship}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
-                    <option value="">Select relationship</option>
-                    <option value="parent">Parent</option>
-                    <option value="guardian">Guardian</option>
-                    <option value="sibling">Sibling</option>
-                    <option value="spouse">Spouse</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div className="grid grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    {availableSpecializations.map((spec) => (
+                      <label key={spec} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded transition">
+                        <input
+                          type="checkbox"
+                          checked={formData.specializations.includes(spec)}
+                          onChange={() => toggleSpecialization(spec)}
+                          className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">{spec}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {formData.specializations.length} specialization(s)
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kin Email <span className="text-red-500">*</span>
+                      Years of Experience
                     </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        name="kinEmail"
-                        value={formData.kinEmail}
-                        onChange={handleChange}
-                        placeholder="jane@example.com"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      name="yearsOfExperience"
+                      value={formData.yearsOfExperience}
+                      onChange={handleChange}
+                      placeholder="5"
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kin Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        name="kinPhoneNumber"
-                        value={formData.kinPhoneNumber}
-                        onChange={handleChange}
-                        placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      />
-                    </div>
-                  </div>
+                  <div className="md:col-span-1"></div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Professional Bio
+                  </label>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    placeholder="Brief professional summary and approach to counseling..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-700">
+                    <strong>Note:</strong> Your registration will be reviewed by an administrator before you can access the system.
+                  </p>
                 </div>
 
                 <div className="flex gap-4">
@@ -450,12 +467,12 @@ const StudentRegisterPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Registering...
+                        Submitting...
                       </div>
                     ) : (
                       'Complete Registration'
@@ -465,20 +482,20 @@ const StudentRegisterPage = () => {
               </div>
             )}
           </form>
+        </div>
 
-          {/* Footer Links */}
-          <div className="text-center mt-6">
-            <p className="text-gray-600">
-              Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
-                Sign in
-              </Link>
-            </p>
-          </div>
+        {/* Footer Links */}
+        <div className="text-center mt-6">
+          <p className="text-gray-600">
+            Already have an account?{' '}
+            <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold">
+              Login here
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default StudentRegisterPage;
+export default CounselorRegisterPage;
