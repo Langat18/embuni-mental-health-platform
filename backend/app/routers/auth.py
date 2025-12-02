@@ -9,34 +9,45 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register/student", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register_student(user_data: StudentRegister, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(status_code=400, detail="Username already exists")
-    
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    new_user = User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=get_password_hash(user_data.password),
-        full_name=user_data.full_name,
-        phone_number=user_data.phone_number,
-        role=UserRole.STUDENT,
-        is_active=True,
-        is_verified=True
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    access_token = create_access_token(data={"sub": new_user.username})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": new_user
-    }
+    try:
+        username = user_data.email.split('@')[0]
+        
+        existing_email = db.query(User).filter(User.email == user_data.email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        existing_username = db.query(User).filter(User.username == username).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Student ID already registered")
+        
+        new_user = User(
+            username=username,
+            email=user_data.email,
+            hashed_password=get_password_hash(user_data.password),
+            full_name=user_data.full_name,
+            phone_number=user_data.phone_number,
+            role=UserRole.STUDENT,
+            is_active=True,
+            is_verified=True
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        access_token = create_access_token(data={"sub": new_user.email})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": new_user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error during registration: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
 
 @router.post("/register/counselor", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_counselor(counselor_data: CounselorRegister, db: Session = Depends(get_db)):
@@ -78,12 +89,12 @@ def register_counselor(counselor_data: CounselorRegister, db: Session = Depends(
 
 @router.post("/login", response_model=Token)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == credentials.username).first()
+    user = db.query(User).filter(User.email == credentials.email).first()
     
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password"
+            detail="Incorrect email or password"
         )
     
     if not user.is_active:
@@ -92,7 +103,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Account is pending approval"
         )
     
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.email})
     
     return {
         "access_token": access_token,

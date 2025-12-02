@@ -24,7 +24,11 @@ def create_emergency_contact(
     
     new_contact = EmergencyContact(
         student_id=current_user.id,
-        **contact_data.model_dump()
+        contact_name=contact_data.contact_name,
+        contact_relationship=contact_data.contact_relationship,  # FIXED
+        phone_number=contact_data.phone_number,
+        email=contact_data.email,
+        is_primary=contact_data.is_primary
     )
     
     db.add(new_contact)

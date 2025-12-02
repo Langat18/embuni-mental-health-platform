@@ -1,10 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from app.models.models import UserRole, TicketStatus, CrisisLevel
+import re
 
 class UserBase(BaseModel):
-    username: str
     email: EmailStr
     full_name: str
     phone_number: Optional[str] = None
@@ -12,9 +12,25 @@ class UserBase(BaseModel):
 class StudentRegister(UserBase):
     password: str
     student_id: str
-    role: UserRole = UserRole.STUDENT
+    course_of_study: Optional[str] = None
+    year_of_study: Optional[str] = None
+    kin_name: Optional[str] = None
+    kin_relationship: Optional[str] = None
+    kin_email: Optional[EmailStr] = None
+    kin_phone_number: Optional[str] = None
+    
+    @validator('email')
+    def validate_student_email(cls, v):
+        pattern = r'^\d+@student\.embuni\.ac\.ke$'
+        if not re.match(pattern, v):
+            raise ValueError('Email must be in format: studentID@student.embuni.ac.ke')
+        return v
+    
+    class Config:
+        extra = "ignore"
 
 class CounselorRegister(UserBase):
+    username: str
     password: str
     staff_id: str
     department: str
@@ -23,13 +39,19 @@ class CounselorRegister(UserBase):
     years_of_experience: int = 0
     bio: Optional[str] = None
     role: UserRole = UserRole.COUNSELOR
+    
+    class Config:
+        extra = "ignore"
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    email: EmailStr
+    full_name: str
+    phone_number: Optional[str]
     role: UserRole
     is_active: bool
     is_verified: bool
@@ -102,7 +124,7 @@ class NoteResponse(BaseModel):
 
 class EmergencyContactCreate(BaseModel):
     contact_name: str
-    relationship: str
+    contact_relationship: str
     phone_number: str
     email: Optional[EmailStr] = None
     is_primary: bool = False
@@ -111,7 +133,7 @@ class EmergencyContactResponse(BaseModel):
     id: int
     student_id: int
     contact_name: str
-    relationship: str
+    contact_relationship: str
     phone_number: str
     email: Optional[str]
     is_primary: bool

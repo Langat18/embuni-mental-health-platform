@@ -1,7 +1,6 @@
-// frontend/src/pages/StudentRegisterPage.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, Phone, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Phone, Shield, ArrowLeft } from 'lucide-react';
 
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
@@ -9,7 +8,6 @@ const StudentRegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -33,8 +31,13 @@ const StudentRegisterPage = () => {
   const validateStep = (step) => {
     switch(step) {
       case 1:
-        if (!formData.username || !formData.email || !formData.password) {
+        if (!formData.email || !formData.password) {
           setError('Please fill all required fields');
+          return false;
+        }
+        const emailRegex = /^\d+@student\.embuni\.ac\.ke$/;
+        if (!emailRegex.test(formData.email)) {
+          setError('Email must be in format: studentID@student.embuni.ac.ke (e.g., 14885@student.embuni.ac.ke)');
           return false;
         }
         if (formData.password.length < 8) {
@@ -88,7 +91,6 @@ const StudentRegisterPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: formData.username,
           email: formData.email,
           password: formData.password,
           full_name: formData.fullName,
@@ -99,19 +101,18 @@ const StudentRegisterPage = () => {
           kin_name: formData.kinName,
           kin_relationship: formData.kinRelationship,
           kin_email: formData.kinEmail,
-          kin_phone_number: formData.kinPhoneNumber,
-          role: 'student'
+          kin_phone_number: formData.kinPhoneNumber
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Registration failed');
+        throw new Error(data.detail || 'Registration failed');
       }
 
-      alert('Registration successful! Please login to your account.');
-      navigate('/login');
+      localStorage.setItem('token', data.access_token);
+      navigate('/student/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -122,13 +123,11 @@ const StudentRegisterPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        {/* Back Button */}
         <Link to="/register" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8">
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
         </Link>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
@@ -137,7 +136,6 @@ const StudentRegisterPage = () => {
           <p className="text-gray-600">Create your account to access counseling services</p>
         </div>
 
-        {/* Progress Indicator */}
         <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             {[1, 2, 3].map((step) => (
@@ -166,41 +164,21 @@ const StudentRegisterPage = () => {
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit}>
-            {/* Error Alert */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
-            {/* STEP 1: Account Information */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Information</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Username <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      placeholder="johndoe"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
+                    University Email <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -209,10 +187,11 @@ const StudentRegisterPage = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      placeholder="19999.student@embuni.ac.ke"
+                      placeholder="14885@student.embuni.ac.ke"
                       className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">Use format: studentID@student.embuni.ac.ke</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,7 +240,6 @@ const StudentRegisterPage = () => {
               </div>
             )}
 
-            {/* STEP 2: Profile Information */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
@@ -290,7 +268,7 @@ const StudentRegisterPage = () => {
                       name="studentId"
                       value={formData.studentId}
                       onChange={handleChange}
-                      placeholder="STU123456"
+                      placeholder="B141/14885/2017"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     />
                   </div>
@@ -365,7 +343,6 @@ const StudentRegisterPage = () => {
               </div>
             )}
 
-            {/* STEP 3: Kin Information */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Kin Information</h2>
@@ -466,7 +443,6 @@ const StudentRegisterPage = () => {
             )}
           </form>
 
-          {/* Footer Links */}
           <div className="text-center mt-6">
             <p className="text-gray-600">
               Already have an account?{' '}

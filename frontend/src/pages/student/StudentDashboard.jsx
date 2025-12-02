@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, Calendar, AlertTriangle, User, 
-  Shield, Phone, FileText, Activity, Heart 
+  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X 
 } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [recentAssessment, setRecentAssessment] = useState(null);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -25,28 +27,41 @@ const StudentDashboard = () => {
       const ticketsRes = await fetch('http://localhost:8000/api/tickets/my-tickets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setTickets(await ticketsRes.json());
+      if (ticketsRes.ok) {
+        setTickets(await ticketsRes.json());
+      }
 
       const contactsRes = await fetch('http://localhost:8000/api/emergency-contacts', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setEmergencyContacts(await contactsRes.json());
+      if (contactsRes.ok) {
+        setEmergencyContacts(await contactsRes.json());
+      }
 
       const assessmentRes = await fetch('http://localhost:8000/api/assessments/recent', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setRecentAssessment(await assessmentRes.json());
+      if (assessmentRes.ok) {
+        setRecentAssessment(await assessmentRes.json());
+      }
 
       const sessionsRes = await fetch('http://localhost:8000/api/schedules/upcoming', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setUpcomingSessions(await sessionsRes.json());
+      if (sessionsRes.ok) {
+        setUpcomingSessions(await sessionsRes.json());
+      }
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const getStatusColor = (status) => {
@@ -80,16 +95,80 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Shield className="h-8 w-8 text-blue-600" />
+              <span className="ml-2 text-xl font-bold text-gray-900">Embuni Counseling</span>
+            </div>
+            
+            <div className="hidden md:flex items-center space-x-4">
+              <Link to="/student/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                Dashboard
+              </Link>
+              <Link to="/student/tickets" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                My Chats
+              </Link>
+              <Link to="/student/resources" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                Resources
+              </Link>
+              <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
+                <span className="text-sm text-gray-700">{user?.full_name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+        </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+                Dashboard
+              </Link>
+              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+                My Chats
+              </Link>
+              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+                Resources
+              </Link>
+              <div className="px-3 py-2 border-t">
+                <p className="text-sm text-gray-600 mb-2">{user?.full_name}</p>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
           <h1 className="text-3xl font-bold mb-2">Welcome, {user?.full_name}</h1>
           <p className="text-blue-100">Your mental wellbeing matters. We're here to support you.</p>
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Link to="/student/new-chat" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
             <MessageSquare className="h-8 w-8 text-blue-600 mb-3" />
@@ -116,7 +195,6 @@ const StudentDashboard = () => {
           </Link>
         </div>
 
-        {/* Assessment Alert */}
         {recentAssessment && recentAssessment.severity_level !== 'minimal' && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
             <div className="flex items-start">
@@ -140,10 +218,8 @@ const StudentDashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Tickets */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">My Conversations</h2>
@@ -198,7 +274,6 @@ const StudentDashboard = () => {
               )}
             </div>
 
-            {/* Sessions */}
             {upcomingSessions.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Sessions</h2>
@@ -227,10 +302,8 @@ const StudentDashboard = () => {
             )}
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
             
-            {/* Emergency Contacts */}
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center">
@@ -262,7 +335,7 @@ const StudentDashboard = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">{contact.relationship}</p>
+                      <p className="text-sm text-gray-600">{contact.contact_relationship}</p>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
                         <Phone className="h-3 w-3 mr-1" />
                         {contact.phone_number}
@@ -278,7 +351,6 @@ const StudentDashboard = () => {
               )}
             </div>
 
-            {/* Crisis Info */}
             <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
               <div className="flex items-start">
                 <AlertTriangle className="h-6 w-6 text-red-600 mr-3 flex-shrink-0" />
@@ -305,7 +377,6 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Wellbeing Tip */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6">
               <Activity className="h-6 w-6 text-purple-600 mb-3" />
               <h3 className="font-semibold text-gray-900 mb-2">Daily Wellbeing Tip</h3>
