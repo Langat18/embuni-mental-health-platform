@@ -2,9 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.routers import auth, tickets, websocket, emergency_contacts, assessments, schedules, admin
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Embuni Mental Health Platform API",
@@ -20,13 +17,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(tickets.router)
-app.include_router(emergency_contacts.router)
-app.include_router(assessments.router)
-app.include_router(schedules.router)
-app.include_router(admin.router)
-app.include_router(websocket.router)
+try:
+    from app.routers import auth, tickets, websocket, emergency_contacts, assessments, schedules, admin
+    app.include_router(auth.router)
+    app.include_router(tickets.router)
+    app.include_router(emergency_contacts.router)
+    app.include_router(assessments.router)
+    app.include_router(schedules.router)
+    app.include_router(admin.router)
+    app.include_router(websocket.router)
+except Exception as e:
+    print(f"Warning: Some routers could not be loaded: {e}")
 
 @app.get("/")
 def root():
