@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="Embuni Mental Health Platform API",
     description="Backend API for University of Embu Mental Health Counselling System",
@@ -18,16 +20,53 @@ app.add_middleware(
 )
 
 try:
-    from app.routers import auth, tickets, websocket, emergency_contacts, assessments, schedules, admin
+    from app.routers import auth
     app.include_router(auth.router)
-    app.include_router(tickets.router)
-    app.include_router(emergency_contacts.router)
-    app.include_router(assessments.router)
-    app.include_router(schedules.router)
-    app.include_router(admin.router)
-    app.include_router(websocket.router)
+    print("✓ Auth router loaded")
 except Exception as e:
-    print(f"Warning: Some routers could not be loaded: {e}")
+    print(f"✗ Auth router failed: {e}")
+
+try:
+    from app.routers import tickets
+    app.include_router(tickets.router)
+    print("✓ Tickets router loaded")
+except Exception as e:
+    print(f"✗ Tickets router failed: {e}")
+
+try:
+    from app.routers import emergency_contacts
+    app.include_router(emergency_contacts.router)
+    print("✓ Emergency contacts router loaded")
+except Exception as e:
+    print(f"✗ Emergency contacts router failed: {e}")
+
+try:
+    from app.routers import assessments
+    app.include_router(assessments.router)
+    print("✓ Assessments router loaded")
+except Exception as e:
+    print(f"✗ Assessments router failed: {e}")
+
+try:
+    from app.routers import schedules
+    app.include_router(schedules.router)
+    print("✓ Schedules router loaded")
+except Exception as e:
+    print(f"✗ Schedules router failed: {e}")
+
+try:
+    from app.routers import admin
+    app.include_router(admin.router)
+    print("✓ Admin router loaded")
+except Exception as e:
+    print(f"✗ Admin router failed: {e}")
+
+try:
+    from app.routers import websocket
+    app.include_router(websocket.router)
+    print("✓ WebSocket router loaded")
+except Exception as e:
+    print(f"✗ WebSocket router failed: {e}")
 
 @app.get("/")
 def root():
@@ -40,3 +79,15 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/routes")
+def list_routes():
+    routes = []
+    for route in app.routes:
+        if hasattr(route, "methods"):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": route.name
+            })
+    return {"routes": routes}
