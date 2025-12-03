@@ -35,6 +35,8 @@ def register_student(user_data: StudentRegister, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
         
+        print(f"Student registered: {new_user.email}, username: {new_user.username}")
+        
         access_token = create_access_token(data={"sub": new_user.email})
         
         return {
@@ -45,7 +47,7 @@ def register_student(user_data: StudentRegister, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error during registration: {str(e)}")
+        print(f"Registration error: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
 
@@ -89,19 +91,34 @@ def register_counselor(counselor_data: CounselorRegister, db: Session = Depends(
 
 @router.post("/login", response_model=Token)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
+    print(f"Login attempt with email: {credentials.email}")
+    
     user = db.query(User).filter(User.email == credentials.email).first()
     
-    if not user or not verify_password(credentials.password, user.hashed_password):
+    if not user:
+        print(f"User not found: {credentials.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    print(f"User found: {user.email}, checking password...")
+    
+    if not verify_password(credentials.password, user.hashed_password):
+        print("Password verification failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
     
     if not user.is_active:
+        print(f"User not active: {user.email}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is pending approval"
         )
+    
+    print(f"Login successful: {user.email}")
     
     access_token = create_access_token(data={"sub": user.email})
     
