@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import random
 import string
@@ -8,8 +8,15 @@ from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.models import User, Ticket, TicketStatus, UserRole
 from app.schemas.schemas import TicketCreate, TicketUpdate, TicketResponse
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/tickets", tags=["Tickets"])
+
+class TicketCreateWithCounselor(BaseModel):
+    category: str
+    initial_message: str
+    counselor_id: Optional[int] = None
+    crisis_level: str = "none"
 
 def generate_ticket_number():
     timestamp = datetime.now().strftime("%Y%m%d")
@@ -18,7 +25,7 @@ def generate_ticket_number():
 
 @router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(
-    ticket_data: TicketCreate,
+    ticket_data: TicketCreateWithCounselor,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.STUDENT]))
 ):
@@ -26,13 +33,24 @@ def create_ticket(
     while db.query(Ticket).filter(Ticket.ticket_number == ticket_number).first():
         ticket_number = generate_ticket_number()
     
+    # Verify counselor exists if specified
+    if ticket_data.counselor_id:
+        counselor = db.query(User).filter(
+            User.id == ticket_data.counselor_id,
+            User.role == UserRole.COUNSELOR
+        ).first()
+        if not counselor:
+            raise HTTPException(status_code=404, detail="Counselor not found")
+    
     new_ticket = Ticket(
         ticket_number=ticket_number,
         student_id=current_user.id,
+        counselor_id=ticket_data.counselor_id,
         category=ticket_data.category,
         initial_message=ticket_data.initial_message,
         crisis_level=ticket_data.crisis_level,
-        status=TicketStatus.NEW
+        status=TicketStatus.ASSIGNED if ticket_data.counselor_id else TicketStatus.NEW,
+        assigned_at=datetime.utcnow() if ticket_data.counselor_id else None
     )
     
     db.add(new_ticket)

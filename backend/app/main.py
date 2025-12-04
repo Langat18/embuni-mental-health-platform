@@ -27,6 +27,13 @@ except Exception as e:
     print(f"✗ Auth router failed: {e}")
 
 try:
+    from app.routers import counselors
+    app.include_router(counselors.router)
+    print("✓ Counselors router loaded")
+except Exception as e:
+    print(f"✗ Counselors router failed: {e}")
+
+try:
     from app.routers import tickets
     app.include_router(tickets.router)
     print("✓ Tickets router loaded")

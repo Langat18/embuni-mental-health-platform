@@ -7,6 +7,7 @@ import StudentRegisterPage from "./pages/StudentRegisterPage";
 import StaffRegisterPage from "./pages/StaffRegisterPage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import NewChatPage from "./pages/student/NewChatPage";
+import AssessmentPage from "./pages/student/AssessmentPage";
 import CounselorDashboard from "./pages/CounselorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ChatPage from "./pages/ChatPage";
@@ -52,6 +53,11 @@ function App() {
           <Route path="/student/new-chat" element={
             <ProtectedRoute allowedRoles={['student']}>
               <NewChatPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/student/assessment" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <AssessmentPage />
             </ProtectedRoute>
           } />
           <Route path="/student/chat/:ticketId" element={
