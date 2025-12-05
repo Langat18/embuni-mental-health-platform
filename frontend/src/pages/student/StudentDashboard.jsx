@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, Calendar, AlertTriangle, User, 
-  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X 
+  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X, Clock, Video, MapPin
 } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -49,7 +49,9 @@ const StudentDashboard = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (sessionsRes.ok) {
-        setUpcomingSessions(await sessionsRes.json());
+        const data = await sessionsRes.json();
+        console.log('Upcoming sessions:', data);
+        setUpcomingSessions(data);
       }
 
     } catch (error) {
@@ -84,6 +86,14 @@ const StudentDashboard = () => {
       severe: 'text-red-800'
     };
     return colors[severity] || 'text-gray-600';
+  };
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
   };
 
   if (loading) {
@@ -202,9 +212,9 @@ const StudentDashboard = () => {
               <div>
                 <h3 className="font-semibold text-yellow-900">Assessment Follow-up Recommended</h3>
                 <p className="text-sm text-yellow-800 mt-1">
-                  Your recent {recentAssessment.assessment_type.toUpperCase()} assessment indicated{' '}
+                  Your recent {recentAssessment.assessment_type} assessment indicated{' '}
                   <span className={`font-semibold ${getSeverityColor(recentAssessment.severity_level)}`}>
-                    {recentAssessment.severity_level.replace('_', ' ')}
+                    {recentAssessment.severity_level}
                   </span>{' '}
                   symptoms. We recommend connecting with a counsellor.
                 </p>
@@ -258,9 +268,9 @@ const StudentDashboard = () => {
                             )}
                           </div>
                           <p className="text-sm text-gray-600 mb-1">Category: {ticket.category}</p>
-                          {ticket.counsellor && (
+                          {ticket.counselor && (
                             <p className="text-sm text-gray-500">
-                              With: {ticket.counsellor.full_name}
+                              With: {ticket.counselor.full_name}
                             </p>
                           )}
                         </div>
@@ -276,27 +286,59 @@ const StudentDashboard = () => {
 
             {upcomingSessions.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Sessions</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Upcoming Sessions</h2>
+                  <span className="text-sm text-gray-500">{upcomingSessions.length} scheduled</span>
+                </div>
                 <div className="space-y-3">
-                  {upcomingSessions.map((session) => (
-                    <div key={session.id} className="flex items-start p-4 border rounded-lg">
-                      <Calendar className="h-5 w-5 text-purple-600 mr-3 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {new Date(session.scheduled_at).toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {session.duration_minutes} minutes • {session.meeting_type}
-                        </p>
-                        {session.meeting_link && (
-                          <a href={session.meeting_link} target="_blank" rel="noopener noreferrer" 
-                             className="text-blue-600 hover:text-blue-700 text-sm mt-1 inline-block">
-                            Join Meeting →
-                          </a>
-                        )}
+                  {upcomingSessions.map((session) => {
+                    const dateTime = formatDateTime(session.scheduled_at);
+                    return (
+                      <div key={session.id} className="flex items-start p-4 border rounded-lg bg-purple-50 border-purple-200">
+                        <Calendar className="h-5 w-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">{dateTime.date}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <p className="text-sm text-gray-600">{dateTime.time}</p>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                {session.meeting_type === 'virtual' ? (
+                                  <>
+                                    <Video className="h-4 w-4 text-gray-500" />
+                                    <p className="text-sm text-gray-600">Virtual Meeting</p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <MapPin className="h-4 w-4 text-gray-500" />
+                                    <p className="text-sm text-gray-600">In-Person</p>
+                                  </>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {session.duration_minutes} minutes
+                              </p>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                              {session.status}
+                            </span>
+                          </div>
+                          {session.meeting_link && (
+                            <a 
+                              href={session.meeting_link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-block font-medium"
+                            >
+                              Join Meeting →
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -367,10 +409,6 @@ const StudentDashboard = () => {
                     <div className="flex items-center text-red-900">
                       <Phone className="h-4 w-4 mr-2" />
                       <span className="font-semibold">Befrienders Kenya: 0722 178 177</span>
-                    </div>
-                    <div className="flex items-center text-red-900">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <span className="font-semibold">Campus Security: [NUMBER]</span>
                     </div>
                   </div>
                 </div>

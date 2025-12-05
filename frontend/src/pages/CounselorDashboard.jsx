@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   MessageSquare, Calendar, Users, Activity, 
-  Clock, AlertTriangle, CheckCircle, LogOut, Menu, X, User 
+  Clock, AlertTriangle, CheckCircle, LogOut, Menu, X, User, Video, MapPin 
 } from 'lucide-react';
 
 const CounselorDashboard = () => {
@@ -12,39 +12,44 @@ const CounselorDashboard = () => {
   const [activeTab, setActiveTab] = useState('active');
   const [tickets, setTickets] = useState([]);
   const [availableTickets, setAvailableTickets] = useState([]);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetchTickets();
+    fetchData();
   }, []);
 
-  const fetchTickets = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
 
-      // Fetch my tickets
       const myTicketsRes = await fetch('http://localhost:8000/api/tickets/my-tickets', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (myTicketsRes.ok) {
         const data = await myTicketsRes.json();
-        console.log('My tickets:', data);
         setTickets(data);
       }
 
-      // Fetch available tickets
       const availableRes = await fetch('http://localhost:8000/api/tickets/available', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (availableRes.ok) {
         const data = await availableRes.json();
-        console.log('Available tickets:', data);
         setAvailableTickets(data);
       }
+
+      const sessionsRes = await fetch('http://localhost:8000/api/schedules/upcoming', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (sessionsRes.ok) {
+        const data = await sessionsRes.json();
+        setUpcomingSessions(data);
+      }
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +67,7 @@ const CounselorDashboard = () => {
       });
 
       if (response.ok) {
-        fetchTickets();
+        fetchData();
       }
     } catch (error) {
       console.error('Error assigning ticket:', error);
@@ -97,6 +102,14 @@ const CounselorDashboard = () => {
     return colors[level] || 'text-gray-600';
   };
 
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -118,9 +131,6 @@ const CounselorDashboard = () => {
             <div className="hidden md:flex items-center space-x-4">
               <Link to="/counselor/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                 Dashboard
-              </Link>
-              <Link to="/counselor/schedule" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                Schedule
               </Link>
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
                 <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
@@ -154,9 +164,6 @@ const CounselorDashboard = () => {
             <div className="px-2 pt-2 pb-3 space-y-1">
               <Link to="/counselor/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
                 Dashboard
-              </Link>
-              <Link to="/counselor/schedule" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                Schedule
               </Link>
               <div className="px-3 py-2 border-t">
                 <p className="text-sm text-gray-600 mb-2">{user?.full_name}</p>
@@ -203,6 +210,16 @@ const CounselorDashboard = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-gray-500 text-sm">Upcoming Sessions</p>
+                <p className="text-3xl font-bold text-gray-900">{upcomingSessions.length}</p>
+              </div>
+              <Calendar className="w-10 h-10 text-purple-500" />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-gray-500 text-sm">Urgent Cases</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {tickets.filter(t => ['high', 'critical'].includes(t.crisis_level)).length}
@@ -211,35 +228,50 @@ const CounselorDashboard = () => {
               <AlertTriangle className="w-10 h-10 text-red-500" />
             </div>
           </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-500 text-sm">This Week</p>
-                <p className="text-3xl font-bold text-gray-900">0</p>
-              </div>
-              <Activity className="w-10 h-10 text-green-500" />
-            </div>
-          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border-b">
           <div className="flex gap-8 px-6 overflow-x-auto">
-            {['active', 'available', 'all'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-2 font-medium transition border-b-2 whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {tab === 'active' && `My Active Chats (${tickets.length})`}
-                {tab === 'available' && `Available Chats (${availableTickets.filter(t => !t.counselor_id).length})`}
-                {tab === 'all' && `All Assigned (${availableTickets.length})`}
-              </button>
-            ))}
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`py-4 px-2 font-medium transition border-b-2 whitespace-nowrap ${
+                activeTab === 'active'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Active Chats ({tickets.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('available')}
+              className={`py-4 px-2 font-medium transition border-b-2 whitespace-nowrap ${
+                activeTab === 'available'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Available Chats ({availableTickets.filter(t => !t.counselor_id).length})
+            </button>
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className={`py-4 px-2 font-medium transition border-b-2 whitespace-nowrap ${
+                activeTab === 'schedule'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Schedule ({upcomingSessions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`py-4 px-2 font-medium transition border-b-2 whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Assigned ({availableTickets.length})
+            </button>
           </div>
         </div>
 
@@ -353,36 +385,132 @@ const CounselorDashboard = () => {
           </div>
         )}
 
+        {activeTab === 'schedule' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">My Upcoming Sessions</h2>
+              <button
+                onClick={fetchData}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Refresh
+              </button>
+            </div>
+            
+            {upcomingSessions.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">No upcoming sessions</p>
+                <p className="text-gray-400">Students can schedule sessions with you</p>
+              </div>
+            ) : (
+              upcomingSessions.map((session) => {
+                const dateTime = formatDateTime(session.scheduled_at);
+                return (
+                  <div key={session.id} className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Calendar className="h-6 w-6 text-purple-600" />
+                          <div>
+                            <p className="font-bold text-lg text-gray-900">{dateTime.date}</p>
+                            <p className="text-gray-600">{dateTime.time}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <p className="text-sm text-gray-700">
+                              <strong>Student:</strong> {session.student?.full_name || 'Unknown'}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <p className="text-sm text-gray-700">
+                              <strong>Duration:</strong> {session.duration_minutes} minutes
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {session.meeting_type === 'virtual' ? (
+                              <>
+                                <Video className="h-4 w-4 text-gray-500" />
+                                <p className="text-sm text-gray-700">
+                                  <strong>Type:</strong> Virtual Meeting
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <MapPin className="h-4 w-4 text-gray-500" />
+                                <p className="text-sm text-gray-700">
+                                  <strong>Type:</strong> In-Person
+                                </p>
+                              </>
+                            )}
+                          </div>
+                          
+                          {session.notes && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                              <p className="text-sm text-blue-900">
+                                <strong>Notes:</strong> {session.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <span className={`text-xs px-3 py-1 rounded-full ${getStatusColor(session.status)}`}>
+                          {session.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
         {activeTab === 'all' && (
           <div className="space-y-4">
-            {availableTickets.map((ticket) => (
-              <div key={ticket.id} className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="font-semibold text-gray-900">
-                        {ticket.student?.full_name || 'Anonymous Student'}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
-                      </span>
-                      {ticket.crisis_level !== 'none' && (
-                        <span className={`text-xs font-medium ${getCrisisColor(ticket.crisis_level)}`}>
-                          {ticket.crisis_level}
+            {availableTickets.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">No tickets yet</p>
+              </div>
+            ) : (
+              availableTickets.map((ticket) => (
+                <div key={ticket.id} className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-semibold text-gray-900">
+                          {ticket.student?.full_name || 'Anonymous Student'}
                         </span>
-                      )}
+                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
+                          {ticket.status.replace('_', ' ')}
+                        </span>
+                        {ticket.crisis_level !== 'none' && (
+                          <span className={`text-xs font-medium ${getCrisisColor(ticket.crisis_level)}`}>
+                            {ticket.crisis_level}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Category: {ticket.category} • 
+                        {ticket.counselor ? ` Counselor: ${ticket.counselor.full_name}` : ' Unassigned'}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      Category: {ticket.category} • 
-                      {ticket.counselor ? ` Counselor: ${ticket.counselor.full_name}` : ' Unassigned'}
-                    </p>
-                  </div>
-                  <div className="text-right text-sm text-gray-500">
-                    {new Date(ticket.created_at).toLocaleDateString()}
+                    <div className="text-right text-sm text-gray-500">
+                      {new Date(ticket.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
