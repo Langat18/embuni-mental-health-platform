@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, FileText, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 const AssessmentPage = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [responses, setResponses] = useState({});
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
 
   const sections = [
     {
@@ -81,38 +83,6 @@ const AssessmentPage = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    const formattedResponses = Object.keys(responses).map(id => ({
-      id: parseInt(id),
-      category: getSectionForQuestion(parseInt(id)),
-      question: getQuestionText(parseInt(id)),
-      score: responses[id]
-    }));
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/assessments/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          responses: formattedResponses,
-          notes: notes
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setResult(data);
-        setSubmitted(true);
-      }
-    } catch (error) {
-      console.error('Error submitting assessment:', error);
-    }
-  };
-
   const getSectionForQuestion = (id) => {
     if (id <= 6) return "Mental Health & Well-being";
     if (id <= 12) return "Emotional Health";
@@ -126,6 +96,47 @@ const AssessmentPage = () => {
       if (question) return question.text;
     }
     return "";
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setError('');
+
+    const formattedResponses = Object.keys(responses).map(id => ({
+      id: parseInt(id),
+      category: getSectionForQuestion(parseInt(id)),
+      question: getQuestionText(parseInt(id)),
+      score: responses[id]
+    }));
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:8000/api/assessments/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          responses: formattedResponses,
+          notes: notes
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to submit assessment');
+      }
+
+      const data = await response.json();
+      setResult(data);
+      setSubmitted(true);
+    } catch (error) {
+      setError(error.message || 'Failed to submit assessment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getSeverityColor = (severity) => {
@@ -151,37 +162,37 @@ const AssessmentPage = () => {
 
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4 animate-bounce">
+                <CheckCircle className="w-12 h-12 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Assessment Complete</h2>
-              <p className="text-gray-600">Your results have been recorded and sent to counselors</p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Assessment Submitted Successfully!</h2>
+              <p className="text-gray-600">{result.message}</p>
             </div>
 
             <div className={`p-6 rounded-lg border-2 mb-6 ${getSeverityColor(result.severity_level)}`}>
               <h3 className="font-bold text-lg mb-2">Overall Result</h3>
-              <p className="text-2xl font-bold mb-2">{result.total_score} / {result.max_score} ({result.percentage}%)</p>
-              <p className="font-semibold">{result.severity_level}</p>
+              <p className="text-3xl font-bold mb-2">{result.total_score} / {result.max_score} ({result.percentage}%)</p>
+              <p className="font-semibold text-lg">{result.severity_level}</p>
             </div>
 
             <div className="space-y-4 mb-6">
               <h3 className="font-bold text-lg">Score Breakdown:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Mental Health & Well-being</p>
-                  <p className="text-xl font-bold text-blue-900">{result.breakdown.mental_health}</p>
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-600 mb-1">Mental Health & Well-being</p>
+                  <p className="text-2xl font-bold text-blue-900">{result.breakdown.mental_health}</p>
                 </div>
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Emotional Health</p>
-                  <p className="text-xl font-bold text-purple-900">{result.breakdown.emotional_health}</p>
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm text-gray-600 mb-1">Emotional Health</p>
+                  <p className="text-2xl font-bold text-purple-900">{result.breakdown.emotional_health}</p>
                 </div>
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Social Health</p>
-                  <p className="text-xl font-bold text-green-900">{result.breakdown.social_health}</p>
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-gray-600 mb-1">Social Health</p>
+                  <p className="text-2xl font-bold text-green-900">{result.breakdown.social_health}</p>
                 </div>
-                <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Needs Awareness</p>
-                  <p className="text-xl font-bold text-orange-900">{result.breakdown.needs_awareness}</p>
+                <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm text-gray-600 mb-1">Needs Awareness</p>
+                  <p className="text-2xl font-bold text-orange-900">{result.breakdown.needs_awareness}</p>
                 </div>
               </div>
             </div>
@@ -192,11 +203,12 @@ const AssessmentPage = () => {
                   <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
                   <div>
                     <h4 className="font-bold text-red-900 mb-2">Recommended Next Steps</h4>
-                    <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                    <ul className="text-sm text-red-800 space-y-2 list-disc list-inside">
+                      <li>A counselor has been notified about your assessment</li>
                       <li>Consider scheduling a session with a counselor</li>
                       <li>Reach out to someone you trust</li>
                       <li>Explore campus mental health resources</li>
-                      <li>If in crisis, contact emergency services immediately</li>
+                      <li><strong>If in crisis, contact emergency services immediately: Kenya Red Cross 1199</strong></li>
                     </ul>
                   </div>
                 </div>
@@ -238,6 +250,13 @@ const AssessmentPage = () => {
         </button>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
               <FileText className="w-8 h-8 text-blue-600" />
@@ -306,7 +325,8 @@ const AssessmentPage = () => {
             {currentSection > 0 && (
               <button
                 onClick={handlePrevious}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+                disabled={submitting}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:opacity-50"
               >
                 Previous
               </button>
@@ -322,10 +342,17 @@ const AssessmentPage = () => {
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!isAllSectionAnswered()}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isAllSectionAnswered() || submitting}
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Submit Assessment
+                {submitting ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Assessment'
+                )}
               </button>
             )}
           </div>

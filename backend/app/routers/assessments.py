@@ -24,7 +24,7 @@ def calculate_severity(total_score: int, max_score: int) -> str:
         return "Critical - Immediate support recommended"
 
 @router.post("/submit")
-def submit_assessment(
+async def submit_assessment(
     responses: dict,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.STUDENT]))
@@ -39,7 +39,7 @@ def submit_assessment(
         needs_awareness = sum(q['score'] for q in questions if 19 <= q['id'] <= 20)
         
         total_score = mental_health + emotional_health + social_health + needs_awareness
-        max_score = 100  # 20 questions * 5 max score
+        max_score = 100
         
         severity = calculate_severity(total_score, max_score)
         
@@ -63,6 +63,27 @@ def submit_assessment(
         db.commit()
         db.refresh(new_assessment)
         
+        # Notify counselors in real-time
+        try:
+            from app.routers.notifications import notification_manager
+            notification_data = {
+                "type": "new_assessment",
+                "assessment_id": new_assessment.id,
+                "student_id": current_user.id,
+                "student_name": current_user.full_name,
+                "student_email": current_user.email,
+                "severity_level": severity,
+                "total_score": total_score,
+                "max_score": max_score,
+                "percentage": round((total_score / max_score) * 100, 1),
+                "needs_followup": severity in ["Critical - Immediate support recommended", "Concerning - Multiple challenges"],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            await notification_manager.broadcast_to_role("counselor", notification_data, db)
+            print(f"✓ Notified counselors about new assessment from {current_user.full_name}")
+        except Exception as e:
+            print(f"Failed to send notification: {e}")
+        
         return {
             "success": True,
             "assessment_id": new_assessment.id,
@@ -76,7 +97,7 @@ def submit_assessment(
                 "social_health": f"{social_health}/30",
                 "needs_awareness": f"{needs_awareness}/10"
             },
-            "message": "Assessment submitted successfully"
+            "message": "Assessment submitted successfully. Counselors have been notified."
         }
         
     except Exception as e:

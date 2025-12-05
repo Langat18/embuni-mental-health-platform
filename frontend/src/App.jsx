@@ -8,6 +8,7 @@ import StaffRegisterPage from "./pages/StaffRegisterPage";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import NewChatPage from "./pages/student/NewChatPage";
 import AssessmentPage from "./pages/student/AssessmentPage";
+import SchedulePage from "./pages/student/SchedulePage";
 import CounselorDashboard from "./pages/CounselorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ChatPage from "./pages/ChatPage";
@@ -58,6 +59,11 @@ function App() {
           <Route path="/student/assessment" element={
             <ProtectedRoute allowedRoles={['student']}>
               <AssessmentPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/student/schedule" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <SchedulePage />
             </ProtectedRoute>
           } />
           <Route path="/student/chat/:ticketId" element={

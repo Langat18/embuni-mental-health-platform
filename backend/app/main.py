@@ -75,6 +75,13 @@ try:
 except Exception as e:
     print(f"✗ WebSocket router failed: {e}")
 
+try:
+    from app.routers import notifications
+    app.include_router(notifications.router)
+    print("✓ Notifications router loaded")
+except Exception as e:
+    print(f"✗ Notifications router failed: {e}")
+
 @app.get("/")
 def root():
     return {
