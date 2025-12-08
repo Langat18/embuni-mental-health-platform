@@ -10,7 +10,6 @@ const SchedulePage = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [meetingType, setMeetingType] = useState('in-person');
   const [notes, setNotes] = useState('');
-  const [availableSlots, setAvailableSlots] = useState([]);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -68,7 +67,8 @@ const SchedulePage = () => {
 
   const isSlotBooked = (time) => {
     return bookedSlots.some(slot => {
-      const slotTime = new Date(slot.scheduled_at).toTimeString().substring(0, 5);
+      const slotDate = new Date(slot.scheduled_at);
+      const slotTime = slotDate.toTimeString().substring(0, 5);
       return slotTime === time;
     });
   };
@@ -105,6 +105,14 @@ const SchedulePage = () => {
       const token = localStorage.getItem('token');
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
 
+      console.log('Submitting schedule:', {
+        counselor_id: parseInt(selectedCounselor),
+        scheduled_at: scheduledAt,
+        duration_minutes: 60,
+        meeting_type: meetingType,
+        notes: notes
+      });
+
       const response = await fetch('http://localhost:8000/api/schedules/', {
         method: 'POST',
         headers: {
@@ -116,7 +124,7 @@ const SchedulePage = () => {
           scheduled_at: scheduledAt,
           duration_minutes: 60,
           meeting_type: meetingType,
-          notes: notes
+          notes: notes || null
         })
       });
 
@@ -125,11 +133,15 @@ const SchedulePage = () => {
         throw new Error(errorData.detail || 'Failed to schedule appointment');
       }
 
+      const result = await response.json();
+      console.log('Schedule created successfully:', result);
+      
       setSuccess(true);
       setTimeout(() => {
         navigate('/student/dashboard');
-      }, 3000);
+      }, 2000);
     } catch (error) {
+      console.error('Scheduling error:', error);
       setError(error.message);
     } finally {
       setSubmitting(false);
@@ -140,11 +152,11 @@ const SchedulePage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4 animate-bounce">
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Session Scheduled!</h2>
-          <p className="text-gray-600 mb-6">Your appointment has been successfully booked. You'll receive a confirmation shortly.</p>
+          <p className="text-gray-600 mb-6">Your appointment has been successfully booked.</p>
           <button
             onClick={() => navigate('/student/dashboard')}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
@@ -303,7 +315,7 @@ const SchedulePage = () => {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any specific topics you'd like to discuss or special requirements..."
+                placeholder="Any specific topics you'd like to discuss..."
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />

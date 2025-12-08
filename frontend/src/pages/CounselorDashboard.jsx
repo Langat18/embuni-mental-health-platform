@@ -5,6 +5,7 @@ import {
   MessageSquare, Calendar, Users, Activity, 
   Clock, AlertTriangle, CheckCircle, LogOut, Menu, X, User, Video, MapPin 
 } from 'lucide-react';
+import { maskName } from '../utils/privacyUtils';
 
 const CounselorDashboard = () => {
   const { user, logout } = useAuth();
@@ -108,6 +109,11 @@ const CounselorDashboard = () => {
       date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
       time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
+  };
+
+  const getDisplayName = (student) => {
+    if (!student) return 'Anonymous Student';
+    return maskName(student.full_name, user?.role);
   };
 
   if (loading) {
@@ -294,7 +300,7 @@ const CounselorDashboard = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900">
-                          {ticket.student?.full_name || 'Anonymous Student'}
+                          {getDisplayName(ticket.student)}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
                           {ticket.status.replace('_', ' ')}
@@ -345,7 +351,7 @@ const CounselorDashboard = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900">
-                          {ticket.student?.full_name || 'Anonymous Student'}
+                          {getDisplayName(ticket.student)}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
                           Unassigned
@@ -422,7 +428,7 @@ const CounselorDashboard = () => {
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-gray-500" />
                             <p className="text-sm text-gray-700">
-                              <strong>Student:</strong> {session.student?.full_name || 'Unknown'}
+                              <strong>Student:</strong> {getDisplayName(session.student)}
                             </p>
                           </div>
                           
@@ -488,7 +494,7 @@ const CounselorDashboard = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900">
-                          {ticket.student?.full_name || 'Anonymous Student'}
+                          {getDisplayName(ticket.student)}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
                           {ticket.status.replace('_', ' ')}

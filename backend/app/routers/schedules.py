@@ -29,12 +29,6 @@ def create_schedule(
             detail="This time slot is already booked. Please choose another time."
         )
     
-    if scheduled_time < datetime.utcnow():
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot schedule sessions in the past"
-        )
-    
     new_schedule = Schedule(
         student_id=current_user.id,
         counselor_id=schedule_data.counselor_id,
@@ -51,21 +45,7 @@ def create_schedule(
     db.commit()
     db.refresh(new_schedule)
     
-    try:
-        from app.routers.notifications import notification_manager
-        notification_data = {
-            "type": "new_schedule",
-            "schedule_id": new_schedule.id,
-            "student_name": current_user.full_name,
-            "scheduled_at": scheduled_time.isoformat(),
-            "meeting_type": schedule_data.meeting_type
-        }
-        import asyncio
-        asyncio.create_task(
-            notification_manager.send_to_user(schedule_data.counselor_id, notification_data)
-        )
-    except Exception as e:
-        print(f"Failed to send notification: {e}")
+    print(f"✓ Schedule created: ID={new_schedule.id}, Student={current_user.full_name}, Time={scheduled_time}")
     
     return new_schedule
 
@@ -79,18 +59,22 @@ def get_upcoming_schedules(
     if current_user.role == UserRole.STUDENT:
         schedules = db.query(Schedule).filter(
             Schedule.student_id == current_user.id,
-            Schedule.scheduled_at > now
+            Schedule.scheduled_at > now,
+            Schedule.status.in_(['scheduled', 'confirmed'])
         ).order_by(Schedule.scheduled_at).all()
     elif current_user.role in [UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]:
         schedules = db.query(Schedule).filter(
             Schedule.counselor_id == current_user.id,
-            Schedule.scheduled_at > now
+            Schedule.scheduled_at > now,
+            Schedule.status.in_(['scheduled', 'confirmed'])
         ).order_by(Schedule.scheduled_at).all()
     else:
         schedules = db.query(Schedule).filter(
-            Schedule.scheduled_at > now
+            Schedule.scheduled_at > now,
+            Schedule.status.in_(['scheduled', 'confirmed'])
         ).order_by(Schedule.scheduled_at).all()
     
+    print(f"Found {len(schedules)} upcoming schedules for {current_user.full_name} (role: {current_user.role})")
     return schedules
 
 @router.get("/booked-slots")
