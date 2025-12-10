@@ -20,7 +20,7 @@ def create_schedule(
     existing_schedule = db.query(Schedule).filter(
         Schedule.counselor_id == schedule_data.counselor_id,
         Schedule.scheduled_at == scheduled_time,
-        Schedule.status.in_(['scheduled', 'confirmed'])
+        Schedule.status.in_(['pending', 'scheduled', 'confirmed'])
     ).first()
     
     if existing_schedule:
@@ -38,14 +38,14 @@ def create_schedule(
         meeting_type=schedule_data.meeting_type,
         meeting_link=schedule_data.meeting_link,
         notes=schedule_data.notes,
-        status='scheduled'
+        status='pending'  # Changed from 'scheduled' to 'pending'
     )
     
     db.add(new_schedule)
     db.commit()
     db.refresh(new_schedule)
     
-    print(f"✓ Schedule created: ID={new_schedule.id}, Student={current_user.full_name}, Time={scheduled_time}")
+    print(f"✓ Schedule created: ID={new_schedule.id}, Status=pending (awaiting counselor approval)")
     
     return new_schedule
 
@@ -60,22 +60,114 @@ def get_upcoming_schedules(
         schedules = db.query(Schedule).filter(
             Schedule.student_id == current_user.id,
             Schedule.scheduled_at > now,
-            Schedule.status.in_(['scheduled', 'confirmed'])
+            Schedule.status.in_(['pending', 'scheduled', 'confirmed'])  # Added 'pending'
         ).order_by(Schedule.scheduled_at).all()
     elif current_user.role in [UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]:
         schedules = db.query(Schedule).filter(
             Schedule.counselor_id == current_user.id,
             Schedule.scheduled_at > now,
-            Schedule.status.in_(['scheduled', 'confirmed'])
+            Schedule.status.in_(['pending', 'scheduled', 'confirmed'])  # Added 'pending'
         ).order_by(Schedule.scheduled_at).all()
     else:
         schedules = db.query(Schedule).filter(
             Schedule.scheduled_at > now,
-            Schedule.status.in_(['scheduled', 'confirmed'])
+            Schedule.status.in_(['pending', 'scheduled', 'confirmed'])
         ).order_by(Schedule.scheduled_at).all()
     
-    print(f"Found {len(schedules)} upcoming schedules for {current_user.full_name} (role: {current_user.role})")
+    print(f"Found {len(schedules)} upcoming schedules for {current_user.full_name}")
     return schedules
+
+@router.get("/pending", response_model=List[ScheduleResponse])
+def get_pending_schedules(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]))
+):
+    schedules = db.query(Schedule).filter(
+        Schedule.counselor_id == current_user.id,
+        Schedule.status == 'pending'
+    ).order_by(Schedule.scheduled_at).all()
+    
+    print(f"✓ Found {len(schedules)} pending schedules for counselor {current_user.full_name}")
+    return schedules
+
+@router.patch("/{schedule_id}/approve")
+def approve_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]))
+):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    if schedule.counselor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to approve this schedule")
+    
+    if schedule.status != 'pending':
+        raise HTTPException(status_code=400, detail="Only pending schedules can be approved")
+    
+    schedule.status = 'confirmed'
+    db.commit()
+    
+    print(f"✓ Schedule {schedule_id} approved by counselor {current_user.full_name}")
+    
+    return {"message": "Schedule approved successfully", "status": "confirmed"}
+
+@router.patch("/{schedule_id}/decline")
+def decline_schedule(
+    schedule_id: int,
+    reason: str = Query(None, description="Reason for declining"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]))
+):
+    """Decline a pending schedule request"""
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    if schedule.counselor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to decline this schedule")
+    
+    if schedule.status != 'pending':
+        raise HTTPException(status_code=400, detail="Only pending schedules can be declined")
+    
+    schedule.status = 'declined'
+    if reason:
+        schedule.notes = f"Declined: {reason}" if not schedule.notes else f"{schedule.notes}\n\nDeclined: {reason}"
+    db.commit()
+    
+    print(f"✓ Schedule {schedule_id} declined by counselor {current_user.full_name}")
+    
+    return {"message": "Schedule declined", "status": "declined", "reason": reason}
+
+@router.delete("/{schedule_id}/cancel")
+def cancel_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if current_user.role == UserRole.STUDENT and schedule.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this schedule")
+    
+    if current_user.role in [UserRole.COUNSELOR, UserRole.PEER_COUNSELOR] and schedule.counselor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this schedule")
+    
+    if schedule.status not in ['pending', 'confirmed', 'scheduled']:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel schedule with status: {schedule.status}")
+    
+    schedule.status = 'cancelled'
+    db.commit()
+    
+    print(f"✓ Schedule {schedule_id} cancelled by {current_user.role} {current_user.full_name}")
+    
+    return {"message": "Schedule cancelled successfully"}
 
 @router.get("/booked-slots")
 def get_booked_slots(
@@ -89,18 +181,20 @@ def get_booked_slots(
         start_datetime = datetime.combine(target_date, datetime.min.time())
         end_datetime = datetime.combine(target_date, datetime.max.time())
         
+        # Include pending and confirmed slots
         booked_schedules = db.query(Schedule).filter(
             Schedule.counselor_id == counselor_id,
             Schedule.scheduled_at >= start_datetime,
             Schedule.scheduled_at <= end_datetime,
-            Schedule.status.in_(['scheduled', 'confirmed'])
+            Schedule.status.in_(['pending', 'scheduled', 'confirmed'])
         ).all()
         
         return [
             {
                 "id": schedule.id,
                 "scheduled_at": schedule.scheduled_at.isoformat(),
-                "duration_minutes": schedule.duration_minutes
+                "duration_minutes": schedule.duration_minutes,
+                "status": schedule.status
             }
             for schedule in booked_schedules
         ]
@@ -125,28 +219,6 @@ def get_all_schedules(
     
     return schedules
 
-@router.patch("/{schedule_id}/cancel")
-def cancel_schedule(
-    schedule_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
-    
-    if not schedule:
-        raise HTTPException(status_code=404, detail="Schedule not found")
-    
-    if current_user.role == UserRole.STUDENT and schedule.student_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if current_user.role in [UserRole.COUNSELOR, UserRole.PEER_COUNSELOR] and schedule.counselor_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    schedule.status = 'cancelled'
-    db.commit()
-    
-    return {"message": "Schedule cancelled successfully"}
-
 @router.patch("/{schedule_id}/complete")
 def complete_schedule(
     schedule_id: int,
@@ -163,5 +235,7 @@ def complete_schedule(
     
     schedule.status = 'completed'
     db.commit()
+    
+    print(f"✓ Schedule {schedule_id} marked as completed")
     
     return {"message": "Schedule marked as completed"}
