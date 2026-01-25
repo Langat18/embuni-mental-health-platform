@@ -178,7 +178,24 @@ class ScheduleResponse(BaseModel):
     meeting_type: str
     meeting_link: Optional[str]
     status: str
+    notes: Optional[str]
+    rating: Optional[int] = None
+    feedback: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class RatingCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    feedback: Optional[str] = Field(None, max_length=1000)
+
+class RatingResponse(BaseModel):
+    success: bool
+    message: str
+    schedule_id: int
+    rating: int
     
     class Config:
         from_attributes = True

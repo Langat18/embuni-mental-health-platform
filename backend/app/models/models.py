@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, ARRAY
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, ARRAY, CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -117,7 +117,7 @@ class EmergencyContact(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     contact_name = Column(String, nullable=False)
-    contact_relationship = Column(String, nullable=False)  # CHANGED: was 'relationship'
+    contact_relationship = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     email = Column(String)
     is_primary = Column(Boolean, default=False)
@@ -151,7 +151,14 @@ class Schedule(Base):
     meeting_link = Column(String)
     status = Column(String, default="scheduled")
     notes = Column(Text)
+    rating = Column(Integer, nullable=True)
+    feedback = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    __table_args__ = (
+        CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
+    )
     
     student = relationship("User", back_populates="student_schedules", foreign_keys=[student_id])
     counselor = relationship("User", back_populates="counselor_schedules", foreign_keys=[counselor_id])

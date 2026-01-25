@@ -19,68 +19,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-try:
-    from app.routers import auth
-    app.include_router(auth.router)
-    print("✓ Auth router loaded")
-except Exception as e:
-    print(f"✗ Auth router failed: {e}")
+routers_config = [
+    ("auth", "Auth"),
+    ("counselors", "Counselors"),
+    ("tickets", "Tickets"),
+    ("emergency_contacts", "Emergency contacts"),
+    ("assessments", "Assessments"),
+    ("schedules", "Schedules"),
+    ("stats", "Stats"),
+    ("admin", "Admin"),
+    ("websocket", "WebSocket"),
+    ("notifications", "Notifications"),
+]
 
-try:
-    from app.routers import counselors
-    app.include_router(counselors.router)
-    print("✓ Counselors router loaded")
-except Exception as e:
-    print(f"✗ Counselors router failed: {e}")
-
-try:
-    from app.routers import tickets
-    app.include_router(tickets.router)
-    print("✓ Tickets router loaded")
-except Exception as e:
-    print(f"✗ Tickets router failed: {e}")
-
-try:
-    from app.routers import emergency_contacts
-    app.include_router(emergency_contacts.router)
-    print("✓ Emergency contacts router loaded")
-except Exception as e:
-    print(f"✗ Emergency contacts router failed: {e}")
-
-try:
-    from app.routers import assessments
-    app.include_router(assessments.router)
-    print("✓ Assessments router loaded")
-except Exception as e:
-    print(f"✗ Assessments router failed: {e}")
-
-try:
-    from app.routers import schedules
-    app.include_router(schedules.router)
-    print("✓ Schedules router loaded")
-except Exception as e:
-    print(f"✗ Schedules router failed: {e}")
-
-try:
-    from app.routers import admin
-    app.include_router(admin.router)
-    print("✓ Admin router loaded")
-except Exception as e:
-    print(f"✗ Admin router failed: {e}")
-
-try:
-    from app.routers import websocket
-    app.include_router(websocket.router)
-    print("✓ WebSocket router loaded")
-except Exception as e:
-    print(f"✗ WebSocket router failed: {e}")
-
-try:
-    from app.routers import notifications
-    app.include_router(notifications.router)
-    print("✓ Notifications router loaded")
-except Exception as e:
-    print(f"✗ Notifications router failed: {e}")
+for module_name, display_name in routers_config:
+    try:
+        module = __import__(f"app.routers.{module_name}", fromlist=["router"])
+        app.include_router(module.router)
+        print(f"✓ {display_name} router loaded")
+    except Exception as e:
+        print(f"✗ {display_name} router failed: {e}")
 
 @app.get("/")
 def root():
