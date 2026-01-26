@@ -23,6 +23,7 @@ routers_config = [
     ("auth", "Auth"),
     ("counselors", "Counselors"),
     ("tickets", "Tickets"),
+    ("ticket_status", "Ticket Status"),
     ("resources", "Resources"),
     ("emergency_contacts", "Emergency contacts"),
     ("assessments", "Assessments"),

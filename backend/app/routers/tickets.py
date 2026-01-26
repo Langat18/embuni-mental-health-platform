@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
+from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
@@ -47,8 +47,6 @@ def get_my_tickets(
         query = query.filter(Ticket.student_id == current_user.id)
     elif current_user.role in [UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]:
         query = query.filter(Ticket.counselor_id == current_user.id)
-    else:
-        query = query
     
     if status_filter:
         query = query.filter(Ticket.status == status_filter)
@@ -62,6 +60,17 @@ def get_my_tickets(
         )
     
     tickets = query.order_by(Ticket.created_at.desc()).all()
+    return tickets
+
+@router.get("/available", response_model=List[TicketResponse])
+def get_available_tickets(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR, UserRole.ADMIN]))
+):
+    tickets = db.query(Ticket).filter(
+        Ticket.status.in_([TicketStatus.NEW, TicketStatus.ASSIGNED])
+    ).order_by(Ticket.priority.desc(), Ticket.created_at).all()
+    
     return tickets
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
@@ -94,7 +103,7 @@ def get_ticket(
     return ticket
 
 @router.patch("/{ticket_id}", response_model=TicketResponse)
-def update_ticket(
+def update_ticket_basic(
     ticket_id: int,
     ticket_data: TicketUpdate,
     db: Session = Depends(get_db),
@@ -107,17 +116,6 @@ def update_ticket(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ticket not found"
         )
-    
-    if ticket_data.status:
-        ticket.status = ticket_data.status
-        if ticket_data.status == TicketStatus.CLOSED:
-            ticket.closed_at = datetime.utcnow()
-    
-    if ticket_data.counselor_id:
-        ticket.counselor_id = ticket_data.counselor_id
-        ticket.assigned_at = datetime.utcnow()
-        if ticket.status == TicketStatus.NEW:
-            ticket.status = TicketStatus.ASSIGNED
     
     if ticket_data.crisis_level:
         ticket.crisis_level = ticket_data.crisis_level
@@ -147,20 +145,8 @@ def delete_ticket(
     
     return {"success": True, "message": "Ticket deleted successfully"}
 
-@router.get("/unassigned/list", response_model=List[TicketResponse])
-def get_unassigned_tickets(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR, UserRole.ADMIN]))
-):
-    tickets = db.query(Ticket).filter(
-        Ticket.counselor_id.is_(None),
-        Ticket.status == TicketStatus.NEW
-    ).order_by(Ticket.priority.desc(), Ticket.created_at).all()
-    
-    return tickets
-
-@router.post("/{ticket_id}/assign", response_model=TicketResponse)
-def assign_ticket(
+@router.post("/{ticket_id}/assign-to-me", response_model=TicketResponse)
+def assign_ticket_to_me(
     ticket_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role([UserRole.COUNSELOR, UserRole.PEER_COUNSELOR]))
