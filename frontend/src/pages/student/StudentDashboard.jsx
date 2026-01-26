@@ -39,13 +39,14 @@ const StudentDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const headers = getAuthHeaders();
+      const userId = user?.id || Math.floor(Math.random() * 1000);
 
       const [ticketsRes, contactsRes, assessmentRes, sessionsRes, tipRes] = await Promise.allSettled([
         axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, { headers }),
-        axios.get(`${API_BASE_URL}/api/emergency-contacts`, { headers }),
+        axios.get(`${API_BASE_URL}/api/emergency-contacts/`, { headers }),
         axios.get(`${API_BASE_URL}/api/assessments/recent`, { headers }),
         axios.get(`${API_BASE_URL}/api/schedules/upcoming`, { headers }),
-        axios.get(`${API_BASE_URL}/api/wellbeing/random-tip?user_id=${user?.id || 1}`, { headers })
+        axios.get(`${API_BASE_URL}/api/wellbeing/daily-tip?user_id=${userId}`, { headers })
       ]);
 
       if (ticketsRes.status === 'fulfilled') setTickets(ticketsRes.value.data);
@@ -69,36 +70,42 @@ const StudentDashboard = () => {
   const handleAddContact = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/api/emergency-contacts`, contactForm, {
+      const response = await axios.post(`${API_BASE_URL}/api/emergency-contacts/`, contactForm, {
         headers: getAuthHeaders()
       });
       
-      setContactForm({
-        contact_name: '',
-        contact_relationship: '',
-        phone_number: '',
-        email: '',
-        is_primary: false
-      });
-      setShowAddContact(false);
-      fetchDashboardData();
+      if (response.status === 201) {
+        setContactForm({
+          contact_name: '',
+          contact_relationship: '',
+          phone_number: '',
+          email: '',
+          is_primary: false
+        });
+        setShowAddContact(false);
+        
+        setEmergencyContacts(prev => [...prev, response.data]);
+      }
     } catch (error) {
       console.error('Error adding contact:', error);
-      alert('Failed to add emergency contact');
+      alert(error.response?.data?.detail || 'Failed to add emergency contact');
     }
   };
 
   const handleDeleteContact = async (contactId) => {
-    if (!confirm('Are you sure you want to delete this contact?')) return;
+    if (!window.confirm('Are you sure you want to delete this contact?')) return;
     
     try {
-      await axios.delete(`${API_BASE_URL}/api/emergency-contacts/${contactId}`, {
+      const response = await axios.delete(`${API_BASE_URL}/api/emergency-contacts/${contactId}`, {
         headers: getAuthHeaders()
       });
-      fetchDashboardData();
+      
+      if (response.status === 200) {
+        setEmergencyContacts(prev => prev.filter(contact => contact.id !== contactId));
+      }
     } catch (error) {
       console.error('Error deleting contact:', error);
-      alert('Failed to delete contact');
+      alert(error.response?.data?.detail || 'Failed to delete contact');
     }
   };
 
@@ -151,13 +158,22 @@ const StudentDashboard = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/student/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              <Link 
+                to="/student/dashboard" 
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+              >
                 Dashboard
               </Link>
-              <Link to="/student/tickets" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              <Link 
+                to="/student/tickets" 
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+              >
                 My Chats
               </Link>
-              <Link to="/student/resources" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              <Link 
+                to="/student/resources" 
+                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition"
+              >
                 Resources
               </Link>
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
@@ -184,13 +200,25 @@ const StudentDashboard = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+              <Link 
+                to="/student/dashboard" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Dashboard
               </Link>
-              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+              <Link 
+                to="/student/tickets" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 My Chats
               </Link>
-              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
+              <Link 
+                to="/student/resources" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Resources
               </Link>
               <div className="px-3 py-2 border-t">

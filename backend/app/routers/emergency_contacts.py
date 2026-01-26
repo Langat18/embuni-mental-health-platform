@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/emergency-contacts", tags=["Emergency Contacts"]
 def create_emergency_contact(
     contact_data: EmergencyContactCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.STUDENT]))
+    current_user: User = Depends(get_current_user)
 ):
     if contact_data.is_primary:
         existing_primary = db.query(EmergencyContact).filter(
@@ -22,7 +22,6 @@ def create_emergency_contact(
         
         if existing_primary:
             existing_primary.is_primary = False
-            db.commit()
     
     new_contact = EmergencyContact(
         student_id=current_user.id,
@@ -74,7 +73,7 @@ def update_emergency_contact(
     contact_id: int,
     contact_data: EmergencyContactCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.STUDENT]))
+    current_user: User = Depends(get_current_user)
 ):
     contact = db.query(EmergencyContact).filter(
         EmergencyContact.id == contact_id,
@@ -108,11 +107,11 @@ def update_emergency_contact(
     
     return contact
 
-@router.delete("/{contact_id}")
+@router.delete("/{contact_id}", status_code=status.HTTP_200_OK)
 def delete_emergency_contact(
     contact_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role([UserRole.STUDENT]))
+    current_user: User = Depends(get_current_user)
 ):
     contact = db.query(EmergencyContact).filter(
         EmergencyContact.id == contact_id,
@@ -128,4 +127,4 @@ def delete_emergency_contact(
     db.delete(contact)
     db.commit()
     
-    return {"message": "Emergency contact deleted successfully"}
+    return {"success": True, "message": "Emergency contact deleted successfully"}

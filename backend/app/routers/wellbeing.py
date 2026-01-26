@@ -40,12 +40,16 @@ WELLBEING_TIPS = [
 ]
 
 @router.get("/daily-tip")
-def get_daily_tip(db: Session = Depends(get_db)):
+def get_daily_tip(user_id: int, db: Session = Depends(get_db)):
     today = datetime.now().date()
     day_of_year = today.timetuple().tm_yday
     
-    random.seed(day_of_year)
-    tip = random.choice(WELLBEING_TIPS)
+    seed_value = day_of_year * 1000 + user_id
+    random.seed(seed_value)
+    
+    shuffled_tips = WELLBEING_TIPS.copy()
+    random.shuffle(shuffled_tips)
+    tip = shuffled_tips[0]
     
     return {
         "success": True,
@@ -55,8 +59,16 @@ def get_daily_tip(db: Session = Depends(get_db)):
 
 @router.get("/random-tip")
 def get_random_tip(user_id: int, db: Session = Depends(get_db)):
-    random.seed(datetime.now().timestamp() + user_id)
-    tip = random.choice(WELLBEING_TIPS)
+    current_hour = datetime.now().hour
+    today = datetime.now().date()
+    day_of_year = today.timetuple().tm_yday
+    
+    seed_value = (day_of_year * 10000) + (user_id * 100) + current_hour
+    random.seed(seed_value)
+    
+    shuffled_tips = WELLBEING_TIPS.copy()
+    random.shuffle(shuffled_tips)
+    tip = shuffled_tips[0]
     
     return {
         "success": True,
