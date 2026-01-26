@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
   MessageSquare, Calendar, AlertTriangle, User, 
-  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X, Clock, Video, MapPin
+  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X, Clock, Video, MapPin, Plus, Trash2, Mail
 } from 'lucide-react';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -13,46 +16,43 @@ const StudentDashboard = () => {
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [recentAssessment, setRecentAssessment] = useState(null);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [dailyTip, setDailyTip] = useState('');
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    contact_name: '',
+    contact_relationship: '',
+    phone_number: '',
+    email: '',
+    is_primary: false
+  });
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
+  const getAuthHeaders = () => ({
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  });
+
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const headers = getAuthHeaders();
 
-      const ticketsRes = await fetch('http://localhost:8000/api/tickets/my-tickets', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (ticketsRes.ok) {
-        setTickets(await ticketsRes.json());
-      }
+      const [ticketsRes, contactsRes, assessmentRes, sessionsRes, tipRes] = await Promise.allSettled([
+        axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, { headers }),
+        axios.get(`${API_BASE_URL}/api/emergency-contacts`, { headers }),
+        axios.get(`${API_BASE_URL}/api/assessments/recent`, { headers }),
+        axios.get(`${API_BASE_URL}/api/schedules/upcoming`, { headers }),
+        axios.get(`${API_BASE_URL}/api/wellbeing/random-tip?user_id=${user?.id || 1}`, { headers })
+      ]);
 
-      const contactsRes = await fetch('http://localhost:8000/api/emergency-contacts', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (contactsRes.ok) {
-        setEmergencyContacts(await contactsRes.json());
-      }
-
-      const assessmentRes = await fetch('http://localhost:8000/api/assessments/recent', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (assessmentRes.ok) {
-        setRecentAssessment(await assessmentRes.json());
-      }
-
-      const sessionsRes = await fetch('http://localhost:8000/api/schedules/upcoming', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (sessionsRes.ok) {
-        const data = await sessionsRes.json();
-        console.log('Upcoming sessions:', data);
-        setUpcomingSessions(data);
-      }
+      if (ticketsRes.status === 'fulfilled') setTickets(ticketsRes.value.data);
+      if (contactsRes.status === 'fulfilled') setEmergencyContacts(contactsRes.value.data);
+      if (assessmentRes.status === 'fulfilled') setRecentAssessment(assessmentRes.value.data);
+      if (sessionsRes.status === 'fulfilled') setUpcomingSessions(sessionsRes.value.data);
+      if (tipRes.status === 'fulfilled') setDailyTip(tipRes.value.data.tip);
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -64,6 +64,42 @@ const StudentDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleAddContact = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_BASE_URL}/api/emergency-contacts`, contactForm, {
+        headers: getAuthHeaders()
+      });
+      
+      setContactForm({
+        contact_name: '',
+        contact_relationship: '',
+        phone_number: '',
+        email: '',
+        is_primary: false
+      });
+      setShowAddContact(false);
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      alert('Failed to add emergency contact');
+    }
+  };
+
+  const handleDeleteContact = async (contactId) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    
+    try {
+      await axios.delete(`${API_BASE_URL}/api/emergency-contacts/${contactId}`, {
+        headers: getAuthHeaders()
+      });
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      alert('Failed to delete contact');
+    }
   };
 
   const getStatusColor = (status) => {
@@ -173,7 +209,6 @@ const StudentDashboard = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
           <h1 className="text-3xl font-bold mb-2">Welcome, {user?.full_name}</h1>
           <p className="text-blue-100">Your mental wellbeing matters. We're here to support you.</p>
@@ -227,9 +262,7 @@ const StudentDashboard = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
           <div className="lg:col-span-2 space-y-6">
-            
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">My Conversations</h2>
@@ -345,50 +378,124 @@ const StudentDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center">
                   <Shield className="h-5 w-5 text-blue-600 mr-2" />
                   Emergency Contacts
                 </h2>
-                <Link to="/student/emergency-contacts" className="text-blue-600 hover:text-blue-700 text-sm">
-                  Edit
-                </Link>
+                <button
+                  onClick={() => setShowAddContact(!showAddContact)}
+                  className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </button>
               </div>
+
+              {showAddContact && (
+                <form onSubmit={handleAddContact} className="mb-4 p-4 bg-blue-50 rounded-lg space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Contact Name"
+                    value={contactForm.contact_name}
+                    onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Relationship"
+                    value={contactForm.contact_relationship}
+                    onChange={(e) => setContactForm({ ...contactForm, contact_relationship: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={contactForm.phone_number}
+                    onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email (Optional)"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={contactForm.is_primary}
+                      onChange={(e) => setContactForm({ ...contactForm, is_primary: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Set as primary contact
+                  </label>
+                  <div className="flex gap-2">
+                    <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddContact(false)}
+                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
 
               {emergencyContacts.length === 0 ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <AlertTriangle className="h-5 w-5 text-red-600 mb-2" />
                   <p className="text-sm text-red-800 font-medium mb-2">No emergency contacts added</p>
-                  <Link to="/student/emergency-contacts" className="text-red-900 underline text-sm">
+                  <button
+                    onClick={() => setShowAddContact(true)}
+                    className="text-red-900 underline text-sm"
+                  >
                     Add contacts now →
-                  </Link>
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {emergencyContacts.slice(0, 2).map((contact) => (
+                  {emergencyContacts.map((contact) => (
                     <div key={contact.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-start justify-between mb-2">
-                        <p className="font-medium text-gray-900">{contact.contact_name}</p>
-                        {contact.is_primary && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                            Primary
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600">{contact.contact_relationship}</p>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Phone className="h-3 w-3 mr-1" />
-                        {contact.phone_number}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900">{contact.contact_name}</p>
+                            {contact.is_primary && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">{contact.contact_relationship}</p>
+                          <div className="flex items-center text-sm text-gray-500 mt-1">
+                            <Phone className="h-3 w-3 mr-1" />
+                            {contact.phone_number}
+                          </div>
+                          {contact.email && (
+                            <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <Mail className="h-3 w-3 mr-1" />
+                              {contact.email}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteContact(contact.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
-                  {emergencyContacts.length > 2 && (
-                    <Link to="/student/emergency-contacts" className="text-blue-600 hover:text-blue-700 text-sm block text-center">
-                      View all {emergencyContacts.length} contacts →
-                    </Link>
-                  )}
                 </div>
               )}
             </div>
@@ -415,12 +522,13 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6">
-              <Activity className="h-6 w-6 text-purple-600 mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Daily Wellbeing Tip</h3>
-              <p className="text-sm text-gray-700">
-                "Take 5 minutes today for deep breathing. Inhale for 4 counts, hold for 4, exhale for 4. 
-                Repeat 5 times."
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-6 w-6 text-purple-600" />
+                <h3 className="font-semibold text-gray-900">Daily Wellbeing Tip</h3>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {dailyTip || 'Take care of your mental health today.'}
               </p>
             </div>
           </div>

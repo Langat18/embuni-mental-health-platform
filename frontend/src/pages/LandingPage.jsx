@@ -197,7 +197,7 @@ const LandingPage = () => {
 
         <footer className="bg-gray-900 text-gray-400 py-8">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="mb-2">© 2025 University of Embu • Counseling Center</p>
+            <p className="mb-2">© 2026 University of Embu • Counseling Center</p>
             <div className="flex justify-center gap-4 text-sm">
               <a href="#" className="hover:text-white transition">Privacy Policy</a>
               <span>•</span>
