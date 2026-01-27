@@ -170,7 +170,7 @@ const SchedulePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full mx-0">
         <button
           onClick={() => navigate('/student/dashboard')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"

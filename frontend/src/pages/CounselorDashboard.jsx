@@ -126,29 +126,29 @@ const CounselorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <MessageSquare className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Counselor Panel</span>
+      <nav className="bg-white shadow-md border-b sticky top-0 z-50">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-10 w-10 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900">Counselor Panel</span>
             </div>
             
             <div className="hidden md:flex items-center space-x-4">
-              <Link to="/counselor/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+              <Link to="/counselor/dashboard" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200">
                 Dashboard
               </Link>
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
-                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200">
                   <User className="h-5 w-5 text-gray-600" />
                   <div className="text-sm">
-                    <p className="font-medium text-gray-900">{user?.full_name}</p>
+                    <p className="font-semibold text-gray-900">{user?.full_name}</p>
                     <p className="text-gray-500 text-xs">Counselor</p>
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition duration-200"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -158,7 +158,7 @@ const CounselorDashboard = () => {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
+              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-200 transition duration-200"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -186,7 +186,7 @@ const CounselorDashboard = () => {
         )}
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="w-full p-6 space-y-6">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
           <h1 className="text-3xl font-bold mb-2">Welcome, {user?.full_name}</h1>
           <p className="text-blue-100">Manage your counseling sessions and support students</p>

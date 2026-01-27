@@ -1,135 +1,109 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { 
-  Shield, LogOut, Menu, X, BookOpen, Video, FileText, 
-  Headphones, Phone, Heart, Brain, Smile, Coffee, Moon, 
-  Activity, Download, ExternalLink
+  Search, Filter, Book, Video, FileText, Headphones, 
+  ExternalLink, MessageSquare, Phone, LogOut, Menu, X,
+  Brain, Heart, Moon, Activity, Users
 } from 'lucide-react';
 
-const StudentResourcesPage = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+const API_BASE_URL = 'http://localhost:8000';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+const getAuthHeaders = () => ({
+  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+});
+
+const StudentResourcesPage = () => {
+  const navigate = useNavigate();
+  const [resources, setResources] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const categoryIcons = {
+    brain: Brain,
+    heart: Heart,
+    moon: Moon,
+    activity: Activity,
+    users: Users
   };
 
-  const categories = [
-    { id: 'all', name: 'All Resources', icon: BookOpen },
-    { id: 'anxiety', name: 'Anxiety & Stress', icon: Brain },
-    { id: 'depression', name: 'Depression', icon: Heart },
-    { id: 'sleep', name: 'Sleep & Rest', icon: Moon },
-    { id: 'wellness', name: 'General Wellness', icon: Activity },
-    { id: 'relationships', name: 'Relationships', icon: Smile }
-  ];
+  const typeIcons = {
+    article: Book,
+    video: Video,
+    guide: FileText,
+    audio: Headphones,
+    exercise: Activity
+  };
 
-  const resources = [
-    {
-      id: 1,
-      category: 'anxiety',
-      type: 'article',
-      title: 'Understanding and Managing Anxiety',
-      description: 'Learn practical techniques to manage anxiety and stress in your daily life.',
-      duration: '10 min read',
-      icon: FileText
-    },
-    {
-      id: 2,
-      category: 'anxiety',
-      type: 'exercise',
-      title: 'Breathing Exercises for Calm',
-      description: 'Step-by-step breathing techniques to reduce stress and promote relaxation.',
-      duration: '5 min practice',
-      icon: Activity
-    },
-    {
-      id: 3,
-      category: 'depression',
-      type: 'video',
-      title: 'Recognizing Signs of Depression',
-      description: 'Understanding depression symptoms and when to seek help.',
-      duration: '8 min watch',
-      icon: Video
-    },
-    {
-      id: 4,
-      category: 'depression',
-      type: 'article',
-      title: 'Self-Care Strategies for Mental Health',
-      description: 'Daily practices to support your mental wellbeing and build resilience.',
-      duration: '12 min read',
-      icon: FileText
-    },
-    {
-      id: 5,
-      category: 'sleep',
-      type: 'guide',
-      title: 'Better Sleep Hygiene Guide',
-      description: 'Comprehensive guide to improving your sleep quality and establishing healthy sleep habits.',
-      duration: '15 min read',
-      icon: Moon
-    },
-    {
-      id: 6,
-      category: 'sleep',
-      type: 'audio',
-      title: 'Guided Sleep Meditation',
-      description: 'Relaxing meditation to help you fall asleep naturally.',
-      duration: '20 min listen',
-      icon: Headphones
-    },
-    {
-      id: 7,
-      category: 'wellness',
-      type: 'article',
-      title: 'Building Healthy Habits',
-      description: 'Evidence-based strategies for creating and maintaining positive habits.',
-      duration: '8 min read',
-      icon: FileText
-    },
-    {
-      id: 8,
-      category: 'wellness',
-      type: 'exercise',
-      title: 'Mindfulness for Beginners',
-      description: 'Introduction to mindfulness practice and its benefits for mental health.',
-      duration: '10 min practice',
-      icon: Activity
-    },
-    {
-      id: 9,
-      category: 'relationships',
-      type: 'article',
-      title: 'Healthy Communication Skills',
-      description: 'Learn effective communication techniques for better relationships.',
-      duration: '12 min read',
-      icon: FileText
-    },
-    {
-      id: 10,
-      category: 'relationships',
-      type: 'guide',
-      title: 'Setting Boundaries',
-      description: 'Understanding and establishing healthy boundaries in relationships.',
-      duration: '10 min read',
-      icon: Heart
+  useEffect(() => {
+    fetchResources();
+    fetchCategories();
+  }, [selectedCategory, selectedType, searchQuery]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/resources/categories`,
+        getAuthHeaders()
+      );
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
-  ];
+  };
 
-  const filteredResources = selectedCategory === 'all' 
-    ? resources 
-    : resources.filter(r => r.category === selectedCategory);
+  const fetchResources = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (selectedType !== 'all') params.append('type', selectedType);
+      if (searchQuery) params.append('search', searchQuery);
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/resources/?${params.toString()}`,
+        getAuthHeaders()
+      );
+      setResources(response.data.resources);
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResourceClick = async (resource) => {
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/resources/${resource.id}/track-access`,
+        {},
+        getAuthHeaders()
+      );
+      
+      if (resource.url) {
+        window.open(resource.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error tracking resource access:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   const getTypeColor = (type) => {
     const colors = {
       article: 'bg-blue-100 text-blue-700',
       video: 'bg-purple-100 text-purple-700',
-      audio: 'bg-green-100 text-green-700',
-      guide: 'bg-orange-100 text-orange-700',
+      guide: 'bg-green-100 text-green-700',
+      audio: 'bg-yellow-100 text-yellow-700',
       exercise: 'bg-pink-100 text-pink-700'
     };
     return colors[type] || 'bg-gray-100 text-gray-700';
@@ -137,173 +111,203 @@ const StudentResourcesPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <nav className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Embuni Counseling</span>
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-4">
-              <Link to="/student/dashboard" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                Dashboard
-              </Link>
-              <Link to="/student/tickets" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                My Chats
-              </Link>
-              <Link to="/student/resources" className="text-blue-600 border-b-2 border-blue-600 px-3 py-2 text-sm font-medium">
-                Resources
-              </Link>
-              <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
-                <span className="text-sm text-gray-700">{user?.full_name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
+              <h1 className="text-xl font-bold text-indigo-600">Embuni Mental Health</h1>
             </div>
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100"
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            <div className="hidden md:flex items-center space-x-8">
+              <Link to="/student/dashboard" className="text-gray-700 hover:text-indigo-600 transition-colors">
+                Dashboard
+              </Link>
+              <Link to="/student/tickets" className="text-gray-700 hover:text-indigo-600 transition-colors">
+                My Chats
+              </Link>
+              <Link to="/student/resources" className="text-indigo-600 font-medium">
+                Resources
+              </Link>
+              <button onClick={handleLogout} className="text-gray-700 hover:text-red-600 transition-colors flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            </div>
+
+            <div className="md:hidden flex items-center">
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-gray-700">
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t">
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white border-t">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/student/dashboard" className="block px-3 py-2 text-gray-700 hover:bg-gray-50">
                 Dashboard
               </Link>
-              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/student/tickets" className="block px-3 py-2 text-gray-700 hover:bg-gray-50">
                 My Chats
               </Link>
-              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 bg-blue-50" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/student/resources" className="block px-3 py-2 text-indigo-600 bg-indigo-50 font-medium">
                 Resources
               </Link>
-              <div className="px-3 py-2 border-t">
-                <p className="text-sm text-gray-600 mb-2">{user?.full_name}</p>
-                <button onClick={handleLogout} className="flex items-center gap-2 text-red-600 hover:text-red-700">
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
+              <button onClick={handleLogout} className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50">
+                Logout
+              </button>
             </div>
           </div>
         )}
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Mental Health Resources</h1>
-          <p className="text-gray-600">Self-help materials, guides, and tools to support your wellbeing journey</p>
+          <p className="text-gray-600">Browse our collection of articles, videos, and guides to support your wellbeing</p>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white mb-8">
-          <div className="flex items-start gap-4">
-            <Phone className="h-8 w-8 flex-shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-bold mb-2">Need Immediate Help?</h3>
-              <p className="mb-3">If you're in crisis or need urgent support, please reach out:</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span className="font-semibold">Kenya Red Cross: 1199</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span className="font-semibold">Befrienders Kenya: 0722 178 177</span>
-                </div>
-              </div>
-              <Link
-                to="/student/new-chat"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold"
-              >
-                Talk to a Counselor Now
-                <ExternalLink className="h-4 w-4" />
-              </Link>
-            </div>
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Search resources..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              All Categories
+            </button>
+            {categories.map((cat) => {
+              const IconComponent = categoryIcons[cat.icon];
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                    selectedCategory === cat.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {IconComponent && <IconComponent className="h-4 w-4" />}
+                  {cat.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedType('all')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                selectedType === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              All Types
+            </button>
+            {['article', 'video', 'guide', 'audio', 'exercise'].map((type) => {
+              const IconComponent = typeIcons[type];
+              return (
+                <button
+                  key={type}
+                  onClick={() => setSelectedType(type)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                    selectedType === type
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {IconComponent && <IconComponent className="h-4 w-4" />}
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {category.name}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredResources.map((resource) => {
-            const Icon = resource.icon;
-            return (
-              <div
-                key={resource.id}
-                className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-all p-6 cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Icon className="h-6 w-6 text-blue-600" />
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : resources.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {resources.map((resource) => {
+              const TypeIcon = typeIcons[resource.type];
+              return (
+                <div
+                  key={resource.id}
+                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 cursor-pointer"
+                  onClick={() => handleResourceClick(resource)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getTypeColor(resource.type)}`}>
+                      {TypeIcon && <TypeIcon className="h-3 w-3" />}
+                      {resource.type}
+                    </span>
+                    <ExternalLink className="h-5 w-5 text-gray-400" />
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${getTypeColor(resource.type)}`}>
-                    {resource.type}
-                  </span>
+                  
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {resource.title}
+                  </h3>
+                  
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    {resource.description}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">{resource.duration}</span>
+                    <span className="text-indigo-600 hover:text-indigo-700 font-medium">
+                      View Resource →
+                    </span>
+                  </div>
                 </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {resource.title}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  {resource.description}
-                </p>
-                
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <span className="text-sm text-gray-500">{resource.duration}</span>
-                  <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm">
-                    Access
-                    <ExternalLink className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Book className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
+            <p className="text-gray-600">Try adjusting your filters or search query</p>
+          </div>
+        )}
 
-        <div className="mt-12 bg-purple-50 border border-purple-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <Coffee className="h-8 w-8 text-purple-600 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Can't find what you're looking for?</h3>
-              <p className="text-gray-700 mb-4">
-                Our counselors can provide personalized resources and recommendations based on your specific needs.
-              </p>
+        <div className="mt-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-8 text-white">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Need Immediate Support?</h2>
+            <p className="mb-6">Our counselors are here to help you</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/student/new-chat"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
               >
-                Ask a Counselor
-                <ExternalLink className="h-4 w-4" />
+                <MessageSquare className="h-5 w-5" />
+                Start a Chat
               </Link>
+              <a
+                href="tel:+254712345678"
+                className="bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <Phone className="h-5 w-5" />
+                Emergency Hotline
+              </a>
             </div>
           </div>
         </div>

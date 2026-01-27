@@ -37,29 +37,29 @@ const LandingPage = () => {
       backgroundAttachment: 'fixed'
     }}>
       <div className="min-h-screen bg-black/40">
-        <nav className="bg-white shadow-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <nav className="bg-white shadow-md sticky top-0 z-50">
+          <div className="w-full px-4 py-3 flex justify-between items-center h-24">
             <div className="flex items-center gap-3">
               <img 
                 src="/assets/images/embunilogo.png" 
                 alt="University of Embu Logo" 
-                className="w-14 h-14 object-contain"
+                className="w-20 h-20 object-contain"
               />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Embuni Counseling</h1>
-                <p className="text-xs text-gray-500">University of Embu</p>
+                <h1 className="text-2xl font-bold text-gray-900">Embuni Counseling</h1>
+                <p className="text-sm text-gray-500">University of Embu</p>
               </div>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => navigate('/login')}
-                className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium transition"
+                className="px-8 py-3 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 hover:text-blue-600 transition duration-200"
               >
                 Login
               </button>
               <button
                 onClick={() => navigate('/register')}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition"
+                className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 shadow-md hover:shadow-lg transition duration-200"
               >
                 Sign Up
               </button>
@@ -67,8 +67,8 @@ const LandingPage = () => {
           </div>
         </nav>
 
-        <section className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <div className="max-w-4xl mx-auto">
+        <section className="w-full px-4 py-20 text-center">
+          <div className="w-full">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
               University of Embu Mental Health & Counseling Center
             </h1>
@@ -84,7 +84,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-16">
+        <section className="w-full px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-md text-center hover:shadow-lg transition">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -113,7 +113,7 @@ const LandingPage = () => {
         </section>
 
         <section className="bg-black/40 py-16">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="w-full px-4">
             <h2 className="text-3xl font-bold text-center text-white mb-4 drop-shadow-lg">
               Empowering Mental Well-being
             </h2>
@@ -159,7 +159,7 @@ const LandingPage = () => {
         </section>
 
         <section className="bg-gradient-to-r from-yellow-400 to-yellow-500 py-16">
-          <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="w-full px-4 text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Your Mental Health Matters</h2>
             <p className="text-xl text-white mb-8">
               Reach out to us for support and take the first step towards a healthier mind.
@@ -173,7 +173,7 @@ const LandingPage = () => {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-16">
+        <section className="w-full px-4 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-lg">Join Our Community</h2>
             <p className="text-white drop-shadow-lg">
@@ -196,7 +196,7 @@ const LandingPage = () => {
         </section>
 
         <footer className="bg-gray-900 text-gray-400 py-8">
-          <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="w-full px-4 text-center">
             <p className="mb-2">© 2026 University of Embu • Counseling Center</p>
             <div className="flex justify-center gap-4 text-sm">
               <a href="#" className="hover:text-white transition">Privacy Policy</a>

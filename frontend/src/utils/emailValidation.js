@@ -1,12 +1,9 @@
-// Email validation for Embuni Mental Health Platform
-
 export const EmailPatterns = {
   STUDENT: /^\d{5}@student\.embuni\.ac\.ke$/,
   STAFF: /^[a-z]+\.[a-z]+@embuni\.ac\.ke$/,
   ADMIN: /^admin@embuni\.ac\.ke$/
 };
 
-// Validate email based on expected role
 export const validateEmail = (email, expectedRole) => {
   const emailLower = email.toLowerCase().trim();
   
@@ -44,13 +41,11 @@ export const validateEmail = (email, expectedRole) => {
   }
 };
 
-// Extract 5-digit student ID
 export const extractStudentId = (email) => {
   const match = email.match(/^(\d{5})@student\.embuni\.ac\.ke$/);
   return match ? match[1] : null;
 };
 
-// Extract staff names from email
 export const extractStaffName = (email) => {
   const match = email.match(/^([a-z]+)\.([a-z]+)@embuni\.ac\.ke$/);
   if (match) {
@@ -61,7 +56,6 @@ export const extractStaffName = (email) => {
   return null;
 };
 
-// Detect role based on email structure
 export const detectRoleFromEmail = (email) => {
   const emailLower = email.toLowerCase().trim();
   
@@ -72,14 +66,12 @@ export const detectRoleFromEmail = (email) => {
   return null;
 };
 
-// Check if email belongs to Embuni domain
 export const isEmbuniEmail = (email) => {
   const emailLower = email.toLowerCase().trim();
   return emailLower.endsWith('@student.embuni.ac.ke') || 
          emailLower.endsWith('@embuni.ac.ke');
 };
 
-// Format phone number to Kenya standard (+254...)
 export const formatPhoneNumber = (phone) => {
   let cleaned = phone.replace(/\D/g, '');
   
@@ -94,7 +86,6 @@ export const formatPhoneNumber = (phone) => {
   return '+' + cleaned;
 };
 
-// Validate Kenyan phone numbers
 export const isValidKenyanPhone = (phone) => {
   const cleaned = phone.replace(/\D/g, '');
   
