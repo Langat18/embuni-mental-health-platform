@@ -1,9 +1,23 @@
+// ============================================================
+// src/pages/StudentRegisterPage.jsx
+// FIX 1: After registration, user object is now saved to
+//         AuthContext via login(), not just the token.
+//         Previously user?.full_name / user?.role were null
+//         immediately after registration.
+// FIX 2: Uses registerStudent from authService (no raw fetch).
+// FIX 3: Typo fix in subtitle.
+// ============================================================
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Phone, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Phone, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { registerStudent } from '../services/authService';
 
 const StudentRegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,25 +33,27 @@ const StudentRegisterPage = () => {
     kinName: '',
     kinRelationship: '',
     kinEmail: '',
-    kinPhoneNumber: ''
+    kinPhoneNumber: '',
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
   };
 
   const validateStep = (step) => {
-    switch(step) {
-      case 1:
+    switch (step) {
+      case 1: {
         if (!formData.email || !formData.password) {
           setError('Please fill all required fields');
           return false;
         }
         const emailRegex = /^\d+@student\.embuni\.ac\.ke$/;
         if (!emailRegex.test(formData.email)) {
-          setError('Email must be in format: studentID@student.embuni.ac.ke (e.g., 14885@student.embuni.ac.ke)');
+          setError(
+            'Email must be in format: studentID@student.embuni.ac.ke (e.g. 14885@student.embuni.ac.ke)'
+          );
           return false;
         }
         if (formData.password.length < 8) {
@@ -49,6 +65,7 @@ const StudentRegisterPage = () => {
           return false;
         }
         break;
+      }
       case 2:
         if (!formData.fullName || !formData.phoneNumber || !formData.studentId) {
           setError('Please fill all required fields');
@@ -56,10 +73,17 @@ const StudentRegisterPage = () => {
         }
         break;
       case 3:
-        if (!formData.kinName || !formData.kinRelationship || !formData.kinEmail || !formData.kinPhoneNumber) {
-          setError('Please fill all kin information fields');
+        if (
+          !formData.kinName ||
+          !formData.kinRelationship ||
+          !formData.kinEmail ||
+          !formData.kinPhoneNumber
+        ) {
+          setError('Please fill all next-of-kin fields');
           return false;
         }
+        break;
+      default:
         break;
     }
     setError('');
@@ -67,13 +91,11 @@ const StudentRegisterPage = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (validateStep(currentStep)) setCurrentStep((s) => s + 1);
   };
 
   const handlePrevious = () => {
-    setCurrentStep(currentStep - 1);
+    setCurrentStep((s) => s - 1);
     setError('');
   };
 
@@ -85,85 +107,91 @@ const StudentRegisterPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/register/student', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.fullName,
-          phone_number: formData.phoneNumber,
-          student_id: formData.studentId,
-          course_of_study: formData.courseOfStudy,
-          year_of_study: formData.yearOfStudy,
-          kin_name: formData.kinName,
-          kin_relationship: formData.kinRelationship,
-          kin_email: formData.kinEmail,
-          kin_phone_number: formData.kinPhoneNumber
-        }),
+      const data = await registerStudent({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.fullName,
+        phone_number: formData.phoneNumber,
+        student_id: formData.studentId,
+        course_of_study: formData.courseOfStudy,
+        year_of_study: formData.yearOfStudy,
+        kin_name: formData.kinName,
+        kin_relationship: formData.kinRelationship,
+        kin_email: formData.kinEmail,
+        kin_phone_number: formData.kinPhoneNumber,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
-      }
-
-      localStorage.setItem('token', data.access_token);
+      // FIX: Save both token AND user to AuthContext so the app
+      // works correctly immediately after registration.
+      login(data.user, data.access_token);
       navigate('/student/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.detail || err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Shared input class ──────────────────────────────────────
+  const inputCls =
+    'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none';
+  const inputWithIconCls =
+    'w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <Link to="/register" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8">
+        <Link
+          to="/register"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
+        >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
+          Back
         </Link>
 
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full mb-4 shadow-lg">
-            <Shield className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img src="/assets/images/embunilogo.png" alt="University of Embu" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Student Registration</h1>
           <p className="text-gray-600">Create your account to access counseling services</p>
         </div>
 
+        {/* Step indicator */}
         <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between">
             {[1, 2, 3].map((step) => (
               <React.Fragment key={step}>
                 <div className="flex flex-col items-center flex-1">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
-                    currentStep >= step 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-400'
-                  }`}>
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition ${
+                      currentStep >= step ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'
+                    }`}
+                  >
                     {step}
                   </div>
-                  <p className={`text-xs mt-2 font-medium ${
-                    currentStep >= step ? 'text-blue-600' : 'text-gray-400'
-                  }`}>
-                    {step === 1 ? 'Account' : step === 2 ? 'Profile' : 'Kin Info'}
+                  <p
+                    className={`text-xs mt-2 font-medium ${
+                      currentStep >= step ? 'text-blue-600' : 'text-gray-400'
+                    }`}
+                  >
+                    {step === 1 ? 'Account' : step === 2 ? 'Profile' : 'Next of Kin'}
                   </p>
                 </div>
                 {step < 3 && (
-                  <div className={`h-1 flex-1 mx-2 ${
-                    currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}></div>
+                  <div
+                    className={`h-1 flex-1 mx-2 ${
+                      currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  />
                 )}
               </React.Fragment>
             ))}
           </div>
         </div>
 
+        {/* Form card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit}>
             {error && (
@@ -172,9 +200,10 @@ const StudentRegisterPage = () => {
               </div>
             )}
 
+            {/* ── STEP 1: Account ── */}
             {currentStep === 1 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Account Information</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -188,10 +217,12 @@ const StudentRegisterPage = () => {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="14885@student.embuni.ac.ke"
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className={inputWithIconCls}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Use format: studentID@student.embuni.ac.ke</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: studentID@student.embuni.ac.ke
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -207,11 +238,10 @@ const StudentRegisterPage = () => {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="Min. 8 characters"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className={inputWithIconCls}
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Confirm Password <span className="text-red-500">*</span>
@@ -224,7 +254,7 @@ const StudentRegisterPage = () => {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         placeholder="Re-enter password"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className={inputWithIconCls}
                       />
                     </div>
                   </div>
@@ -240,9 +270,10 @@ const StudentRegisterPage = () => {
               </div>
             )}
 
+            {/* ── STEP 2: Profile ── */}
             {currentStep === 2 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Profile Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -254,7 +285,7 @@ const StudentRegisterPage = () => {
                     value={formData.fullName}
                     onChange={handleChange}
                     placeholder="John Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className={inputCls}
                   />
                 </div>
 
@@ -269,10 +300,9 @@ const StudentRegisterPage = () => {
                       value={formData.studentId}
                       onChange={handleChange}
                       placeholder="B141/14885/2017"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className={inputCls}
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone Number <span className="text-red-500">*</span>
@@ -285,7 +315,7 @@ const StudentRegisterPage = () => {
                         value={formData.phoneNumber}
                         onChange={handleChange}
                         placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className={inputWithIconCls}
                       />
                     </div>
                   </div>
@@ -300,8 +330,8 @@ const StudentRegisterPage = () => {
                     name="courseOfStudy"
                     value={formData.courseOfStudy}
                     onChange={handleChange}
-                    placeholder="e.g., Computer Science"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="e.g. Computer Science"
+                    className={inputCls}
                   />
                 </div>
 
@@ -309,12 +339,7 @@ const StudentRegisterPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Year of Study
                   </label>
-                  <select
-                    name="yearOfStudy"
-                    value={formData.yearOfStudy}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
+                  <select name="yearOfStudy" value={formData.yearOfStudy} onChange={handleChange} className={inputCls}>
                     <option value="">Select year</option>
                     <option value="first">First Year</option>
                     <option value="second">Second Year</option>
@@ -325,52 +350,33 @@ const StudentRegisterPage = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
-                  >
+                  <button type="button" onClick={handlePrevious} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
                     ← Previous
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-                  >
+                  <button type="button" onClick={handleNext} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
                     Next: Kin Information →
                   </button>
                 </div>
               </div>
             )}
 
+            {/* ── STEP 3: Next of Kin ── */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Kin Information</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Next of Kin Information</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kin Name <span className="text-red-500">*</span>
+                    Kin Full Name <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="kinName"
-                    value={formData.kinName}
-                    onChange={handleChange}
-                    placeholder="Jane Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
+                  <input type="text" name="kinName" value={formData.kinName} onChange={handleChange} placeholder="Jane Doe" className={inputCls} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Relationship <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="kinRelationship"
-                    value={formData.kinRelationship}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  >
+                  <select name="kinRelationship" value={formData.kinRelationship} onChange={handleChange} className={inputCls}>
                     <option value="">Select relationship</option>
                     <option value="parent">Parent</option>
                     <option value="guardian">Guardian</option>
@@ -387,51 +393,28 @@ const StudentRegisterPage = () => {
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        name="kinEmail"
-                        value={formData.kinEmail}
-                        onChange={handleChange}
-                        placeholder="jane@example.com"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      />
+                      <input type="email" name="kinEmail" value={formData.kinEmail} onChange={handleChange} placeholder="jane@example.com" className={inputWithIconCls} />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kin Phone Number <span className="text-red-500">*</span>
+                      Kin Phone <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        name="kinPhoneNumber"
-                        value={formData.kinPhoneNumber}
-                        onChange={handleChange}
-                        placeholder="+254 712 345 678"
-                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                      />
+                      <input type="tel" name="kinPhoneNumber" value={formData.kinPhoneNumber} onChange={handleChange} placeholder="+254 712 345 678" className={inputWithIconCls} />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
-                  >
+                  <button type="button" onClick={handlePrevious} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
                     ← Previous
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  <button type="submit" disabled={loading} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Registering...
                       </div>
                     ) : (

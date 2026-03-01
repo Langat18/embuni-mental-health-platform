@@ -3,11 +3,11 @@ import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  MessageSquare, Shield, LogOut, Menu, X, Plus, Search,
+  MessageSquare, LogOut, Menu, X, Plus, Search,
   AlertTriangle, Clock, User, Filter
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const StudentTicketsPage = () => {
   const { user, logout } = useAuth();
@@ -43,11 +43,9 @@ const StudentTicketsPage = () => {
 
   const filterAndSearchTickets = () => {
     let filtered = tickets;
-
     if (filterStatus !== 'all') {
       filtered = filtered.filter(ticket => ticket.status === filterStatus);
     }
-
     if (searchTerm) {
       filtered = filtered.filter(ticket =>
         ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,7 +53,6 @@ const StudentTicketsPage = () => {
         (ticket.counselor?.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     setFilteredTickets(filtered);
   };
 
@@ -100,8 +97,10 @@ const StudentTicketsPage = () => {
       <nav className="bg-white shadow-md border-b sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
+
+            {/* FIX: university logo instead of Shield icon */}
             <div className="flex items-center gap-2">
-              <Shield className="h-10 w-10 text-blue-600" />
+              <img src="/assets/images/embunilogo.png" alt="University of Embu" className="h-12 w-12 object-contain" />
               <span className="text-2xl font-bold text-gray-900">Embuni Counseling</span>
             </div>
             
@@ -117,20 +116,13 @@ const StudentTicketsPage = () => {
               </Link>
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
                 <span className="text-sm font-medium text-gray-700">{user?.full_name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition duration-200"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
+                <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition duration-200">
+                  <LogOut className="h-4 w-4" />Logout
                 </button>
               </div>
             </div>
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-200 transition duration-200"
-            >
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-200 transition duration-200">
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
@@ -139,20 +131,13 @@ const StudentTicketsPage = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
-                Dashboard
-              </Link>
-              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 bg-blue-50" onClick={() => setMobileMenuOpen(false)}>
-                My Chats
-              </Link>
-              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
-                Resources
-              </Link>
+              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 bg-blue-50" onClick={() => setMobileMenuOpen(false)}>My Chats</Link>
+              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>Resources</Link>
               <div className="px-3 py-2 border-t">
                 <p className="text-sm text-gray-600 mb-2">{user?.full_name}</p>
                 <button onClick={handleLogout} className="flex items-center gap-2 text-red-600 hover:text-red-700">
-                  <LogOut className="h-4 w-4" />
-                  Logout
+                  <LogOut className="h-4 w-4" />Logout
                 </button>
               </div>
             </div>
@@ -167,12 +152,8 @@ const StudentTicketsPage = () => {
               <h1 className="text-3xl font-bold text-gray-900">My Conversations</h1>
               <p className="text-gray-600 mt-1">View and manage all your counseling conversations</p>
             </div>
-            <Link
-              to="/student/new-chat"
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
-            >
-              <Plus className="h-5 w-5" />
-              Start New Chat
+            <Link to="/student/new-chat" className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
+              <Plus className="h-5 w-5" />Start New Chat
             </Link>
           </div>
         </div>
@@ -191,11 +172,7 @@ const StudentTicketsPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-gray-400" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-              >
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                 <option value="all">All Status</option>
                 <option value="new">New</option>
                 <option value="assigned">Assigned</option>
@@ -215,38 +192,27 @@ const StudentTicketsPage = () => {
               {searchTerm || filterStatus !== 'all' ? 'No tickets found' : 'No conversations yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || filterStatus !== 'all' 
+              {searchTerm || filterStatus !== 'all'
                 ? 'Try adjusting your search or filter criteria'
-                : "Start your first conversation with a counselor to get support"
-              }
+                : 'Start your first conversation with a counselor to get support'}
             </p>
             {!searchTerm && filterStatus === 'all' && (
-              <Link
-                to="/student/new-chat"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                <Plus className="h-5 w-5" />
-                Start Your First Chat
+              <Link to="/student/new-chat" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <Plus className="h-5 w-5" />Start Your First Chat
               </Link>
             )}
           </div>
         ) : (
           <div className="grid gap-4">
             {filteredTickets.map((ticket) => (
-              <Link
-                key={ticket.id}
-                to={`/student/chat/${ticket.id}`}
-                className="block bg-white rounded-lg shadow-sm border hover:border-blue-500 hover:shadow-md transition-all p-6"
-              >
+              <Link key={ticket.id} to={`/student/chat/${ticket.id}`} className="block bg-white rounded-lg shadow-sm border hover:border-blue-500 hover:shadow-md transition-all p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                       <MessageSquare className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-lg">
-                        Ticket #{ticket.ticket_number}
-                      </h3>
+                      <h3 className="font-semibold text-gray-900 text-lg">Ticket #{ticket.ticket_number}</h3>
                       <p className="text-sm text-gray-600">{ticket.category}</p>
                     </div>
                   </div>
@@ -254,6 +220,7 @@ const StudentTicketsPage = () => {
                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${getStatusColor(ticket.status)}`}>
                       {ticket.status.replace('_', ' ')}
                     </span>
+                    {/* FIX: guard against null crisis_level */}
                     {ticket.crisis_level && ticket.crisis_level !== 'none' && (
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${getCrisisColor(ticket.crisis_level)}`}>
                         {ticket.crisis_level}
@@ -261,21 +228,14 @@ const StudentTicketsPage = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <User className="h-4 w-4" />
-                    <span>
-                      {ticket.counselor ? ticket.counselor.full_name : 'Awaiting assignment'}
-                    </span>
+                    <span>{ticket.counselor ? ticket.counselor.full_name : 'Awaiting assignment'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span>{new Date(ticket.created_at).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    })}</span>
+                    <span>{new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   {ticket.priority > 0 && (
                     <div className="flex items-center gap-2 text-orange-600">
@@ -284,12 +244,9 @@ const StudentTicketsPage = () => {
                     </div>
                   )}
                 </div>
-
                 {ticket.initial_message && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {ticket.initial_message}
-                    </p>
+                    <p className="text-sm text-gray-600 line-clamp-2">{ticket.initial_message}</p>
                   </div>
                 )}
               </Link>

@@ -4,10 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MessageSquare, Calendar, AlertTriangle, User, 
-  Shield, Phone, FileText, Activity, Heart, LogOut, Menu, X, Clock, Video, MapPin, Plus, Trash2, Mail
+  Phone, FileText, Activity, Heart, LogOut, Menu, X, Clock, Video, MapPin, Plus, Trash2, Mail
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -39,21 +39,28 @@ const StudentDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const headers = getAuthHeaders();
-      const userId = user?.id || Math.floor(Math.random() * 1000);
 
-      const [ticketsRes, contactsRes, assessmentRes, sessionsRes, tipRes] = await Promise.allSettled([
+      // FIX: removed Math.random() fallback — only fetch tip when user.id is known
+      const requests = [
         axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, { headers }),
         axios.get(`${API_BASE_URL}/api/emergency-contacts/`, { headers }),
         axios.get(`${API_BASE_URL}/api/assessments/recent`, { headers }),
         axios.get(`${API_BASE_URL}/api/schedules/upcoming`, { headers }),
-        axios.get(`${API_BASE_URL}/api/wellbeing/daily-tip?user_id=${userId}`, { headers })
-      ]);
+      ];
 
-      if (ticketsRes.status === 'fulfilled') setTickets(ticketsRes.value.data);
-      if (contactsRes.status === 'fulfilled') setEmergencyContacts(contactsRes.value.data);
-      if (assessmentRes.status === 'fulfilled') setRecentAssessment(assessmentRes.value.data);
-      if (sessionsRes.status === 'fulfilled') setUpcomingSessions(sessionsRes.value.data);
-      if (tipRes.status === 'fulfilled') setDailyTip(tipRes.value.data.tip);
+      if (user?.id) {
+        requests.push(
+          axios.get(`${API_BASE_URL}/api/wellbeing/daily-tip?user_id=${user.id}`, { headers })
+        );
+      }
+
+      const results = await Promise.allSettled(requests);
+
+      if (results[0].status === 'fulfilled') setTickets(results[0].value.data);
+      if (results[1].status === 'fulfilled') setEmergencyContacts(results[1].value.data);
+      if (results[2].status === 'fulfilled') setRecentAssessment(results[2].value.data);
+      if (results[3].status === 'fulfilled') setUpcomingSessions(results[3].value.data);
+      if (results[4]?.status === 'fulfilled') setDailyTip(results[4].value.data.tip);
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -73,17 +80,9 @@ const StudentDashboard = () => {
       const response = await axios.post(`${API_BASE_URL}/api/emergency-contacts/`, contactForm, {
         headers: getAuthHeaders()
       });
-      
       if (response.status === 201) {
-        setContactForm({
-          contact_name: '',
-          contact_relationship: '',
-          phone_number: '',
-          email: '',
-          is_primary: false
-        });
+        setContactForm({ contact_name: '', contact_relationship: '', phone_number: '', email: '', is_primary: false });
         setShowAddContact(false);
-        
         setEmergencyContacts(prev => [...prev, response.data]);
       }
     } catch (error) {
@@ -94,12 +93,10 @@ const StudentDashboard = () => {
 
   const handleDeleteContact = async (contactId) => {
     if (!window.confirm('Are you sure you want to delete this contact?')) return;
-    
     try {
       const response = await axios.delete(`${API_BASE_URL}/api/emergency-contacts/${contactId}`, {
         headers: getAuthHeaders()
       });
-      
       if (response.status === 200) {
         setEmergencyContacts(prev => prev.filter(contact => contact.id !== contactId));
       }
@@ -115,7 +112,8 @@ const StudentDashboard = () => {
       assigned: 'bg-yellow-100 text-yellow-800',
       active: 'bg-green-100 text-green-800',
       follow_up: 'bg-purple-100 text-purple-800',
-      resolved: 'bg-gray-100 text-gray-800'
+      resolved: 'bg-gray-100 text-gray-800',
+      closed: 'bg-gray-100 text-gray-600'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -152,28 +150,21 @@ const StudentDashboard = () => {
       <nav className="bg-white shadow-md border-b sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
+
+            {/* FIX: university logo instead of Shield icon */}
             <div className="flex items-center gap-2">
-              <Shield className="h-10 w-10 text-blue-600" />
+              <img src="/assets/images/embunilogo.png" alt="University of Embu" className="h-12 w-12 object-contain" />
               <span className="text-2xl font-bold text-gray-900">Embuni Counseling</span>
             </div>
             
             <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                to="/student/dashboard" 
-                className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200"
-              >
+              <Link to="/student/dashboard" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200">
                 Dashboard
               </Link>
-              <Link 
-                to="/student/tickets" 
-                className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200"
-              >
+              <Link to="/student/tickets" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200">
                 My Chats
               </Link>
-              <Link 
-                to="/student/resources" 
-                className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200"
-              >
+              <Link to="/student/resources" className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition duration-200">
                 Resources
               </Link>
               <div className="flex items-center space-x-3 ml-4 pl-4 border-l">
@@ -200,33 +191,18 @@ const StudentDashboard = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link 
-                to="/student/dashboard" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <Link to="/student/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
                 Dashboard
               </Link>
-              <Link 
-                to="/student/tickets" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <Link to="/student/tickets" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
                 My Chats
               </Link>
-              <Link 
-                to="/student/resources" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => setMobileMenuOpen(false)}
-              >
+              <Link to="/student/resources" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100 transition" onClick={() => setMobileMenuOpen(false)}>
                 Resources
               </Link>
               <div className="px-3 py-2 border-t">
                 <p className="text-sm text-gray-600 mb-2">{user?.full_name}</p>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 text-red-600 hover:text-red-700"
-                >
+                <button onClick={handleLogout} className="flex items-center gap-2 text-red-600 hover:text-red-700">
                   <LogOut className="h-4 w-4" />
                   Logout
                 </button>
@@ -248,19 +224,16 @@ const StudentDashboard = () => {
             <h3 className="font-semibold text-gray-900">Start Chat</h3>
             <p className="text-sm text-gray-600 mt-1">Connect with a counsellor</p>
           </Link>
-
           <Link to="/student/assessment" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
             <FileText className="h-8 w-8 text-green-600 mb-3" />
             <h3 className="font-semibold text-gray-900">Self-Assessment</h3>
             <p className="text-sm text-gray-600 mt-1">Check your wellbeing</p>
           </Link>
-
           <Link to="/student/schedule" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
             <Calendar className="h-8 w-8 text-purple-600 mb-3" />
             <h3 className="font-semibold text-gray-900">Schedule Session</h3>
             <p className="text-sm text-gray-600 mt-1">Book an appointment</p>
           </Link>
-
           <Link to="/student/resources" className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
             <Heart className="h-8 w-8 text-red-600 mb-3" />
             <h3 className="font-semibold text-gray-900">Resources</h3>
@@ -294,11 +267,8 @@ const StudentDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">My Conversations</h2>
-                <Link to="/student/tickets" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  View All →
-                </Link>
+                <Link to="/student/tickets" className="text-blue-600 hover:text-blue-700 text-sm font-medium">View All →</Link>
               </div>
-
               {tickets.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -310,11 +280,7 @@ const StudentDashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {tickets.slice(0, 3).map((ticket) => (
-                    <Link
-                      key={ticket.id}
-                      to={`/student/chat/${ticket.id}`}
-                      className="block p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                    >
+                    <Link key={ticket.id} to={`/student/chat/${ticket.id}`} className="block p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -322,7 +288,8 @@ const StudentDashboard = () => {
                             <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
                               {ticket.status.replace('_', ' ')}
                             </span>
-                            {ticket.crisis_level !== 'none' && (
+                            {/* FIX: guard against null crisis_level */}
+                            {ticket.crisis_level && ticket.crisis_level !== 'none' && (
                               <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
                                 {ticket.crisis_level}
                               </span>
@@ -330,9 +297,7 @@ const StudentDashboard = () => {
                           </div>
                           <p className="text-sm text-gray-600 mb-1">Category: {ticket.category}</p>
                           {ticket.counselor && (
-                            <p className="text-sm text-gray-500">
-                              With: {ticket.counselor.full_name}
-                            </p>
+                            <p className="text-sm text-gray-500">With: {ticket.counselor.full_name}</p>
                           )}
                         </div>
                         <div className="text-right text-sm text-gray-500">
@@ -367,32 +332,17 @@ const StudentDashboard = () => {
                               </div>
                               <div className="flex items-center gap-2 mt-1">
                                 {session.meeting_type === 'virtual' ? (
-                                  <>
-                                    <Video className="h-4 w-4 text-gray-500" />
-                                    <p className="text-sm text-gray-600">Virtual Meeting</p>
-                                  </>
+                                  <><Video className="h-4 w-4 text-gray-500" /><p className="text-sm text-gray-600">Virtual Meeting</p></>
                                 ) : (
-                                  <>
-                                    <MapPin className="h-4 w-4 text-gray-500" />
-                                    <p className="text-sm text-gray-600">In-Person</p>
-                                  </>
+                                  <><MapPin className="h-4 w-4 text-gray-500" /><p className="text-sm text-gray-600">In-Person</p></>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {session.duration_minutes} minutes
-                              </p>
+                              <p className="text-sm text-gray-500 mt-1">{session.duration_minutes} minutes</p>
                             </div>
-                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
-                              {session.status}
-                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">{session.status}</span>
                           </div>
                           {session.meeting_link && (
-                            <a 
-                              href={session.meeting_link} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-block font-medium"
-                            >
+                            <a href={session.meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-block font-medium">
                               Join Meeting →
                             </a>
                           )}
@@ -408,72 +358,29 @@ const StudentDashboard = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center">
-                  <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  {/* keep small shield icon here — it's inside a card, not the navbar */}
+                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
                   Emergency Contacts
                 </h2>
-                <button
-                  onClick={() => setShowAddContact(!showAddContact)}
-                  className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
+                <button onClick={() => setShowAddContact(!showAddContact)} className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                  <Plus className="h-4 w-4" />Add
                 </button>
               </div>
 
               {showAddContact && (
                 <form onSubmit={handleAddContact} className="mb-4 p-4 bg-blue-50 rounded-lg space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Contact Name"
-                    value={contactForm.contact_name}
-                    onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Relationship"
-                    value={contactForm.contact_relationship}
-                    onChange={(e) => setContactForm({ ...contactForm, contact_relationship: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    required
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone Number"
-                    value={contactForm.phone_number}
-                    onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    required
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email (Optional)"
-                    value={contactForm.email}
-                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
+                  <input type="text" placeholder="Contact Name" value={contactForm.contact_name} onChange={(e) => setContactForm({ ...contactForm, contact_name: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input type="text" placeholder="Relationship" value={contactForm.contact_relationship} onChange={(e) => setContactForm({ ...contactForm, contact_relationship: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input type="tel" placeholder="Phone Number" value={contactForm.phone_number} onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input type="email" placeholder="Email (Optional)" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                   <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={contactForm.is_primary}
-                      onChange={(e) => setContactForm({ ...contactForm, is_primary: e.target.checked })}
-                      className="w-4 h-4"
-                    />
+                    <input type="checkbox" checked={contactForm.is_primary} onChange={(e) => setContactForm({ ...contactForm, is_primary: e.target.checked })} className="w-4 h-4" />
                     Set as primary contact
                   </label>
                   <div className="flex gap-2">
-                    <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddContact(false)}
-                      className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300"
-                    >
-                      Cancel
-                    </button>
+                    <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Save</button>
+                    <button type="button" onClick={() => setShowAddContact(false)} className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">Cancel</button>
                   </div>
                 </form>
               )}
@@ -482,12 +389,7 @@ const StudentDashboard = () => {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <AlertTriangle className="h-5 w-5 text-red-600 mb-2" />
                   <p className="text-sm text-red-800 font-medium mb-2">No emergency contacts added</p>
-                  <button
-                    onClick={() => setShowAddContact(true)}
-                    className="text-red-900 underline text-sm"
-                  >
-                    Add contacts now →
-                  </button>
+                  <button onClick={() => setShowAddContact(true)} className="text-red-900 underline text-sm">Add contacts now →</button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -497,28 +399,13 @@ const StudentDashboard = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-gray-900">{contact.contact_name}</p>
-                            {contact.is_primary && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                Primary
-                              </span>
-                            )}
+                            {contact.is_primary && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Primary</span>}
                           </div>
                           <p className="text-sm text-gray-600">{contact.contact_relationship}</p>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <Phone className="h-3 w-3 mr-1" />
-                            {contact.phone_number}
-                          </div>
-                          {contact.email && (
-                            <div className="flex items-center text-sm text-gray-500 mt-1">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {contact.email}
-                            </div>
-                          )}
+                          <div className="flex items-center text-sm text-gray-500 mt-1"><Phone className="h-3 w-3 mr-1" />{contact.phone_number}</div>
+                          {contact.email && <div className="flex items-center text-sm text-gray-500 mt-1"><Mail className="h-3 w-3 mr-1" />{contact.email}</div>}
                         </div>
-                        <button
-                          onClick={() => handleDeleteContact(contact.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition"
-                        >
+                        <button onClick={() => handleDeleteContact(contact.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -533,18 +420,10 @@ const StudentDashboard = () => {
                 <AlertTriangle className="h-6 w-6 text-red-600 mr-3 flex-shrink-0" />
                 <div>
                   <h3 className="font-bold text-red-900 mb-2">In Crisis?</h3>
-                  <p className="text-sm text-red-800 mb-3">
-                    If you're in immediate danger or having thoughts of self-harm, please:
-                  </p>
+                  <p className="text-sm text-red-800 mb-3">If you're in immediate danger or having thoughts of self-harm, please:</p>
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center text-red-900">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <span className="font-semibold">Kenya Red Cross: 1199</span>
-                    </div>
-                    <div className="flex items-center text-red-900">
-                      <Phone className="h-4 w-4 mr-2" />
-                      <span className="font-semibold">Befrienders Kenya: 0722 178 177</span>
-                    </div>
+                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Kenya Red Cross: 1199</span></div>
+                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Befrienders Kenya: 0722 178 177</span></div>
                   </div>
                 </div>
               </div>

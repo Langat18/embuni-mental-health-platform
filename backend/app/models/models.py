@@ -4,11 +4,13 @@ from sqlalchemy.sql import func
 from app.core.database import Base
 import enum
 
+
 class UserRole(str, enum.Enum):
     STUDENT = "student"
     COUNSELOR = "counselor"
     PEER_COUNSELOR = "peer_counselor"
     ADMIN = "admin"
+
 
 class TicketStatus(str, enum.Enum):
     NEW = "new"
@@ -18,6 +20,7 @@ class TicketStatus(str, enum.Enum):
     RESOLVED = "resolved"
     CLOSED = "closed"
 
+
 class CrisisLevel(str, enum.Enum):
     NONE = "none"
     LOW = "low"
@@ -25,9 +28,10 @@ class CrisisLevel(str, enum.Enum):
     HIGH = "high"
     CRITICAL = "critical"
 
+
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
@@ -39,7 +43,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     student_tickets = relationship("Ticket", back_populates="student", foreign_keys="Ticket.student_id")
     counselor_tickets = relationship("Ticket", back_populates="counselor", foreign_keys="Ticket.counselor_id")
     messages = relationship("Message", back_populates="sender")
@@ -48,9 +52,10 @@ class User(Base):
     student_schedules = relationship("Schedule", back_populates="student", foreign_keys="Schedule.student_id")
     counselor_schedules = relationship("Schedule", back_populates="counselor", foreign_keys="Schedule.counselor_id")
 
+
 class CounselorProfile(Base):
     __tablename__ = "counselor_profiles"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     staff_id = Column(String, unique=True, nullable=False)
@@ -62,12 +67,13 @@ class CounselorProfile(Base):
     is_available = Column(Boolean, default=True)
     max_active_tickets = Column(Integer, default=10)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     user = relationship("User", backref="counselor_profile")
+
 
 class Ticket(Base):
     __tablename__ = "tickets"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ticket_number = Column(String, unique=True, index=True, nullable=False)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -79,41 +85,45 @@ class Ticket(Base):
     initial_message = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     assigned_at = Column(DateTime(timezone=True))
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
     closed_at = Column(DateTime(timezone=True))
-    
+
     student = relationship("User", back_populates="student_tickets", foreign_keys=[student_id])
     counselor = relationship("User", back_populates="counselor_tickets", foreign_keys=[counselor_id])
     messages = relationship("Message", back_populates="ticket", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="ticket", cascade="all, delete-orphan")
 
+
 class Message(Base):
     __tablename__ = "messages"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     ticket = relationship("Ticket", back_populates="messages")
     sender = relationship("User", back_populates="messages")
 
+
 class Note(Base):
     __tablename__ = "notes"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
     counselor_note = Column(Text, nullable=False)
     tags = Column(ARRAY(String))
     is_private = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     ticket = relationship("Ticket", back_populates="notes")
+
 
 class EmergencyContact(Base):
     __tablename__ = "emergency_contacts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     contact_name = Column(String, nullable=False)
@@ -122,12 +132,13 @@ class EmergencyContact(Base):
     email = Column(String)
     is_primary = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     student = relationship("User", back_populates="emergency_contacts")
+
 
 class Assessment(Base):
     __tablename__ = "assessments"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     assessment_type = Column(String, nullable=False)
@@ -135,12 +146,13 @@ class Assessment(Base):
     severity_level = Column(String)
     responses = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     student = relationship("User", back_populates="assessments")
+
 
 class Schedule(Base):
     __tablename__ = "schedules"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     counselor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -155,17 +167,18 @@ class Schedule(Base):
     feedback = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     __table_args__ = (
         CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
     )
-    
+
     student = relationship("User", back_populates="student_schedules", foreign_keys=[student_id])
     counselor = relationship("User", back_populates="counselor_schedules", foreign_keys=[counselor_id])
 
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     action = Column(String, nullable=False)
