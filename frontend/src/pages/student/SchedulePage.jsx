@@ -35,7 +35,7 @@ const SchedulePage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/counselors/available', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/counselors/available`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -113,7 +113,7 @@ const SchedulePage = () => {
         notes: notes
       });
 
-      const response = await fetch('http://localhost:8000/api/schedules/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/schedules/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

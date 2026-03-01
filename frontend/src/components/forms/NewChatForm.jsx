@@ -31,7 +31,7 @@ const NewChatForm = () => {
       }
 
       console.log('Fetching counselors...');
-      const response = await fetch('http://localhost:8000/api/counselors/available', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/counselors/available`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -105,7 +105,7 @@ const NewChatForm = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/tickets/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/tickets/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

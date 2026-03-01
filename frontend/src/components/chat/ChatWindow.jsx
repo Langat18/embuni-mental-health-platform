@@ -19,7 +19,7 @@ const ChatWindow = ({ ticketId, currentUser }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const websocket = new WebSocket(
-      `ws://localhost:8000/ws/chat/${ticketId}?token=${token}`
+      `${import.meta.env.VITE_WS_URL || "ws://localhost:8000"}/ws/chat/${ticketId}?token=${token}`
     );
 
     websocket.onopen = () => {

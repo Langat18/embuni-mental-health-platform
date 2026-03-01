@@ -61,7 +61,7 @@ const CounselorRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/auth/register/counselor', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/register/counselor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
