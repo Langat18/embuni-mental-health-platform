@@ -16,7 +16,7 @@ const TicketStatusManager = ({ ticket, onStatusUpdate, userRole }) => {
     setLoading(true);
     try {
       const response = await axios.patch(
-        `${API_BASE_URL}/api/tickets/${ticket.id}/status`,
+        `${API_BASE_URL}/api/tickets/${ticket.id}/update-status`,
         { status: newStatus },
         { headers: getAuthHeaders() }
       );
