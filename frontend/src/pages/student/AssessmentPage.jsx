@@ -14,7 +14,7 @@ const AssessmentPage = () => {
 
   const sections = [
     {
-      title: "Mental Health & Well-being",
+      title: "Mental Wellbeing",
       description: "Score each statement on a scale of 1 (Rarely/Not at all true) to 5 (Always/Completely true)",
       questions: [
         { id: 1, text: "I generally feel focused and can concentrate on my academic tasks." },
@@ -26,7 +26,7 @@ const AssessmentPage = () => {
       ]
     },
     {
-      title: "Emotional Health",
+      title: "Emotional Wellbeing",
       description: "Score each statement on a scale of 1 (Rarely/Not at all true) to 5 (Always/Completely true)",
       questions: [
         { id: 7, text: "I am usually in a stable mood and my emotions don't fluctuate wildly." },
@@ -38,7 +38,7 @@ const AssessmentPage = () => {
       ]
     },
     {
-      title: "Social Health",
+      title: "Social Wellbeing",
       description: "Score each statement on a scale of 1 (Rarely/Not at all true) to 5 (Always/Completely true)",
       questions: [
         { id: 13, text: "I have at least one person I can trust and talk to openly about personal issues." },
@@ -50,20 +50,17 @@ const AssessmentPage = () => {
       ]
     },
     {
-      title: "Needs Awareness and Reflection",
+      title: "Support Awareness",
       description: "Score each statement on a scale of 1 (Rarely/Not at all true) to 5 (Always/Completely true)",
       questions: [
-        { id: 19, text: "I am aware of the university resources available for mental health support (e.g., counseling, student services)." },
+        { id: 19, text: "I am aware of the university resources available for wellbeing support (e.g., counseling, student services)." },
         { id: 20, text: "I feel comfortable seeking help if I were struggling mentally or emotionally." }
       ]
     }
   ];
 
   const handleScoreChange = (questionId, score) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: score
-    }));
+    setResponses(prev => ({ ...prev, [questionId]: score }));
   };
 
   const isAllSectionAnswered = () => {
@@ -72,22 +69,18 @@ const AssessmentPage = () => {
   };
 
   const handleNext = () => {
-    if (currentSection < sections.length - 1) {
-      setCurrentSection(currentSection + 1);
-    }
+    if (currentSection < sections.length - 1) setCurrentSection(currentSection + 1);
   };
 
   const handlePrevious = () => {
-    if (currentSection > 0) {
-      setCurrentSection(currentSection - 1);
-    }
+    if (currentSection > 0) setCurrentSection(currentSection - 1);
   };
 
   const getSectionForQuestion = (id) => {
-    if (id <= 6) return "Mental Health & Well-being";
-    if (id <= 12) return "Emotional Health";
-    if (id <= 18) return "Social Health";
-    return "Needs Awareness and Reflection";
+    if (id <= 6) return "Mental Wellbeing";
+    if (id <= 12) return "Emotional Wellbeing";
+    if (id <= 18) return "Social Wellbeing";
+    return "Support Awareness";
   };
 
   const getQuestionText = (id) => {
@@ -111,17 +104,13 @@ const AssessmentPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/assessments/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          responses: formattedResponses,
-          notes: notes
-        })
+        body: JSON.stringify({ responses: formattedResponses, notes })
       });
 
       if (!response.ok) {
@@ -152,10 +141,8 @@ const AssessmentPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-3xl mx-auto">
-          <button
-            onClick={() => navigate('/student/dashboard')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-          >
+          <button onClick={() => navigate('/student/dashboard')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
             <ArrowLeft className="w-5 h-5" />
             Back to Dashboard
           </button>
@@ -165,7 +152,7 @@ const AssessmentPage = () => {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4 animate-bounce">
                 <CheckCircle className="w-12 h-12 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Assessment Submitted Successfully!</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Check-In Submitted!</h2>
               <p className="text-gray-600">{result.message}</p>
             </div>
 
@@ -179,19 +166,19 @@ const AssessmentPage = () => {
               <h3 className="font-bold text-lg">Score Breakdown:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-600 mb-1">Mental Health & Well-being</p>
+                  <p className="text-sm text-gray-600 mb-1">Mental Wellbeing</p>
                   <p className="text-2xl font-bold text-blue-900">{result.breakdown.mental_health}</p>
                 </div>
                 <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-sm text-gray-600 mb-1">Emotional Health</p>
+                  <p className="text-sm text-gray-600 mb-1">Emotional Wellbeing</p>
                   <p className="text-2xl font-bold text-purple-900">{result.breakdown.emotional_health}</p>
                 </div>
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm text-gray-600 mb-1">Social Health</p>
+                  <p className="text-sm text-gray-600 mb-1">Social Wellbeing</p>
                   <p className="text-2xl font-bold text-green-900">{result.breakdown.social_health}</p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-gray-600 mb-1">Needs Awareness</p>
+                  <p className="text-sm text-gray-600 mb-1">Support Awareness</p>
                   <p className="text-2xl font-bold text-orange-900">{result.breakdown.needs_awareness}</p>
                 </div>
               </div>
@@ -204,10 +191,10 @@ const AssessmentPage = () => {
                   <div>
                     <h4 className="font-bold text-red-900 mb-2">Recommended Next Steps</h4>
                     <ul className="text-sm text-red-800 space-y-2 list-disc list-inside">
-                      <li>A counselor has been notified about your assessment</li>
+                      <li>A counselor has been notified about your check-in</li>
                       <li>Consider scheduling a session with a counselor</li>
                       <li>Reach out to someone you trust</li>
-                      <li>Explore campus mental health resources</li>
+                      <li>Explore campus wellbeing resources</li>
                       <li><strong>If in crisis, contact emergency services immediately: Kenya Red Cross 1199</strong></li>
                     </ul>
                   </div>
@@ -216,16 +203,12 @@ const AssessmentPage = () => {
             )}
 
             <div className="flex gap-4">
-              <button
-                onClick={() => navigate('/student/new-chat')}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
+              <button onClick={() => navigate('/student/new-chat')}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
                 Talk to a Counselor
               </button>
-              <button
-                onClick={() => navigate('/student/dashboard')}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
-              >
+              <button onClick={() => navigate('/student/dashboard')}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
                 Back to Dashboard
               </button>
             </div>
@@ -241,10 +224,8 @@ const AssessmentPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
-        <button
-          onClick={() => navigate('/student/dashboard')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-        >
+        <button onClick={() => navigate('/student/dashboard')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
           <ArrowLeft className="w-5 h-5" />
           Back to Dashboard
         </button>
@@ -261,7 +242,7 @@ const AssessmentPage = () => {
             <div className="flex items-center gap-3 mb-4">
               <FileText className="w-8 h-8 text-blue-600" />
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Mental Health Self-Assessment</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Wellbeing Check-In</h2>
                 <p className="text-gray-600">Section {currentSection + 1} of {sections.length}</p>
               </div>
             </div>
@@ -323,35 +304,23 @@ const AssessmentPage = () => {
 
           <div className="flex gap-4">
             {currentSection > 0 && (
-              <button
-                onClick={handlePrevious}
-                disabled={submitting}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:opacity-50"
-              >
+              <button onClick={handlePrevious} disabled={submitting}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:opacity-50">
                 Previous
               </button>
             )}
             {currentSection < sections.length - 1 ? (
-              <button
-                onClick={handleNext}
-                disabled={!isAllSectionAnswered()}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button onClick={handleNext} disabled={!isAllSectionAnswered()}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 Next Section
               </button>
             ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={!isAllSectionAnswered() || submitting}
-                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
+              <button onClick={handleSubmit} disabled={!isAllSectionAnswered() || submitting}
+                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                 {submitting ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    Submitting...
-                  </>
+                  <><Loader className="w-5 h-5 animate-spin" />Submitting...</>
                 ) : (
-                  'Submit Assessment'
+                  'Submit Check-In'
                 )}
               </button>
             )}
