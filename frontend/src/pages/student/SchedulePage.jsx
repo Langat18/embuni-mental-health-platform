@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, User, CheckCircle, AlertCircle, Video, MapPin } from 'lucide-react';
+import {
+  ArrowLeft, Calendar, Clock, User, CheckCircle, AlertCircle,
+  Video, MapPin, Phone, Mail, AlertTriangle
+} from 'lucide-react';
 
 const SchedulePage = () => {
   const navigate = useNavigate();
   const [counselors, setCounselors] = useState([]);
-  const [selectedCounselor, setSelectedCounselor] = useState(null);
+  const [selectedCounselor, setSelectedCounselor] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [meetingType, setMeetingType] = useState('in-person');
@@ -15,6 +18,9 @@ const SchedulePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [suggestedCounselor, setSuggestedCounselor] = useState(null);
 
   const timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -23,13 +29,18 @@ const SchedulePage = () => {
 
   useEffect(() => {
     fetchCounselors();
+    fetchEmergencyContacts();
   }, []);
 
   useEffect(() => {
-    if (selectedCounselor && selectedDate) {
-      fetchBookedSlots();
-    }
+    if (selectedCounselor && selectedDate) fetchBookedSlots();
   }, [selectedCounselor, selectedDate]);
+
+  useEffect(() => {
+    if (counselors.length > 0 && !suggestedCounselor) {
+      setSuggestedCounselor(counselors[0]);
+    }
+  }, [counselors]);
 
   const fetchCounselors = async () => {
     setLoading(true);
@@ -49,17 +60,29 @@ const SchedulePage = () => {
     }
   };
 
+  const fetchEmergencyContacts = async () => {
+    setLoadingContacts(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/emergency-contacts/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) setEmergencyContacts(await response.json());
+    } catch (error) {
+      console.error('Error fetching emergency contacts:', error);
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
   const fetchBookedSlots = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `http://localhost:8000/api/schedules/booked-slots?counselor_id=${selectedCounselor}&date=${selectedDate}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/schedules/booked-slots?counselor_id=${selectedCounselor}&date=${selectedDate}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      if (response.ok) {
-        const data = await response.json();
-        setBookedSlots(data);
-      }
+      if (response.ok) setBookedSlots(await response.json());
     } catch (error) {
       console.error('Error fetching booked slots:', error);
     }
@@ -92,27 +115,15 @@ const SchedulePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!selectedCounselor || !selectedDate || !selectedTime) {
       setError('Please fill in all required fields');
       return;
     }
-
     setSubmitting(true);
     setError('');
-
     try {
       const token = localStorage.getItem('token');
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
-
-      console.log('Submitting schedule:', {
-        counselor_id: parseInt(selectedCounselor),
-        scheduled_at: scheduledAt,
-        duration_minutes: 60,
-        meeting_type: meetingType,
-        notes: notes
-      });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/schedules/`, {
         method: 'POST',
         headers: {
@@ -127,21 +138,13 @@ const SchedulePage = () => {
           notes: notes || null
         })
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to schedule appointment');
       }
-
-      const result = await response.json();
-      console.log('Schedule created successfully:', result);
-      
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/student/dashboard');
-      }, 2000);
+      setTimeout(() => navigate('/student/dashboard'), 2000);
     } catch (error) {
-      console.error('Scheduling error:', error);
       setError(error.message);
     } finally {
       setSubmitting(false);
@@ -170,7 +173,7 @@ const SchedulePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="w-full mx-0">
+      <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate('/student/dashboard')}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
@@ -179,194 +182,298 @@ const SchedulePage = () => {
           Back to Dashboard
         </button>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Calendar className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Schedule a Session</h2>
-              <p className="text-gray-600">Book an appointment with a counselor</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Calendar className="w-8 h-8 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Schedule a Session</h2>
+                  <p className="text-gray-600">Book an appointment with a counselor</p>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+
+              {suggestedCounselor && !selectedCounselor && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900 mb-1">Suggested for you</p>
+                  <p className="text-sm text-blue-700">
+                    <strong>{suggestedCounselor.full_name}</strong> — {suggestedCounselor.department}
+                  </p>
+                  {suggestedCounselor.specializations?.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Specializes in: {suggestedCounselor.specializations.slice(0, 3).join(', ')}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setSelectedCounselor(String(suggestedCounselor.id))}
+                    className="mt-2 text-xs font-semibold text-blue-700 underline hover:text-blue-900"
+                  >
+                    Book with {suggestedCounselor.full_name}
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Counselor <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={selectedCounselor || ''}
+                    onChange={(e) => setSelectedCounselor(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    required
+                  >
+                    <option value="">Choose a counselor...</option>
+                    {counselors.map((counselor) => (
+                      <option key={counselor.id} value={counselor.id}>
+                        {counselor.full_name} - {counselor.department}
+                        {suggestedCounselor?.id === counselor.id ? ' (Suggested)' : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedCounselor && (
+                    <div className="mt-3 p-4 bg-blue-50 rounded-lg">
+                      {(() => {
+                        const selected = counselors.find(c => c.id === parseInt(selectedCounselor));
+                        return selected ? (
+                          <div>
+                            <p className="font-medium text-blue-900">{selected.full_name}</p>
+                            <p className="text-sm text-blue-700 mt-1">{selected.bio}</p>
+                            <p className="text-sm text-blue-600 mt-2">
+                              <strong>Specializations:</strong> {selected.specializations.join(', ')}
+                            </p>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => {
+                        setSelectedDate(e.target.value);
+                        setSelectedTime('');
+                      }}
+                      min={getMinDate()}
+                      max={getMaxDate()}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Sessions can be booked 1-30 days in advance</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meeting Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={meetingType}
+                      onChange={(e) => setMeetingType(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    >
+                      <option value="in-person">In-Person</option>
+                      <option value="virtual">Virtual (Online)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {selectedDate && selectedCounselor && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Available Time Slots <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {timeSlots.map((time) => {
+                        const isBooked = isSlotBooked(time);
+                        const isPast = isSlotPast(selectedDate, time);
+                        const isDisabled = isBooked || isPast;
+                        return (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() => !isDisabled && setSelectedTime(time)}
+                            disabled={isDisabled}
+                            className={`py-3 px-4 rounded-lg border-2 font-medium transition ${
+                              selectedTime === time
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : isDisabled
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                            }`}
+                          >
+                            <Clock className="w-4 h-4 inline mr-2" />
+                            {time}
+                            {isBooked && <span className="block text-xs mt-1">Booked</span>}
+                            {isPast && !isBooked && <span className="block text-xs mt-1">Past</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Each session is 60 minutes. Grayed out slots are unavailable.
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Notes (Optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Any specific topics you'd like to discuss..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                </div>
+
+                {meetingType === 'in-person' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-blue-900">In-Person Location</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Student Counseling Center, Main Campus Building, 2nd Floor, Room 204
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {meetingType === 'virtual' && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Video className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-purple-900">Virtual Meeting</p>
+                        <p className="text-sm text-purple-700 mt-1">
+                          A meeting link will be sent to your email before the session
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-900">Need help choosing a counselor?</p>
+                      <p className="text-sm text-yellow-800 mt-1">
+                        Visit the Reception Desk at the Counseling Center for a guided referral — Main Campus, 2nd Floor, Room 200.
+                      </p>
+                      <a
+                        href="tel:+254712345678"
+                        className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-yellow-900 underline hover:text-yellow-700"
+                      >
+                        <Phone className="w-4 h-4" /> Call Reception: +254 712 345 678
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting || !selectedCounselor || !selectedDate || !selectedTime}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Scheduling...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-5 h-5" />
+                      Schedule Session
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                <Phone className="w-5 h-5 text-red-500" />
+                Emergency Contacts
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">Your saved contacts for quick reference.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Counselor <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedCounselor || ''}
-                onChange={(e) => setSelectedCounselor(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                required
-              >
-                <option value="">Choose a counselor...</option>
-                {counselors.map((counselor) => (
-                  <option key={counselor.id} value={counselor.id}>
-                    {counselor.full_name} - {counselor.department}
-                  </option>
-                ))}
-              </select>
-
-              {selectedCounselor && (
-                <div className="mt-3 p-4 bg-blue-50 rounded-lg">
-                  {(() => {
-                    const selected = counselors.find(c => c.id === parseInt(selectedCounselor));
-                    return selected ? (
-                      <div>
-                        <p className="font-medium text-blue-900">{selected.full_name}</p>
-                        <p className="text-sm text-blue-700 mt-1">{selected.bio}</p>
-                        <p className="text-sm text-blue-600 mt-2">
-                          <strong>Specializations:</strong> {selected.specializations.join(', ')}
-                        </p>
-                      </div>
-                    ) : null;
-                  })()}
+              {loadingContacts ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
                 </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setSelectedTime('');
-                  }}
-                  min={getMinDate()}
-                  max={getMaxDate()}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Sessions can be booked 1-30 days in advance</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Meeting Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={meetingType}
-                  onChange={(e) => setMeetingType(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="in-person">In-Person</option>
-                  <option value="virtual">Virtual (Online)</option>
-                </select>
-              </div>
-            </div>
-
-            {selectedDate && selectedCounselor && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Available Time Slots <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {timeSlots.map((time) => {
-                    const isBooked = isSlotBooked(time);
-                    const isPast = isSlotPast(selectedDate, time);
-                    const isDisabled = isBooked || isPast;
-
-                    return (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => !isDisabled && setSelectedTime(time)}
-                        disabled={isDisabled}
-                        className={`py-3 px-4 rounded-lg border-2 font-medium transition ${
-                          selectedTime === time
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : isDisabled
-                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                        }`}
-                      >
-                        <Clock className="w-4 h-4 inline mr-2" />
-                        {time}
-                        {isBooked && <span className="block text-xs mt-1">Booked</span>}
-                        {isPast && !isBooked && <span className="block text-xs mt-1">Past</span>}
-                      </button>
-                    );
-                  })}
+              ) : emergencyContacts.length === 0 ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <AlertTriangle className="h-5 w-5 text-red-600 mb-2" />
+                  <p className="text-sm text-red-800 font-medium mb-2">No emergency contacts saved</p>
+                  <button
+                    onClick={() => navigate('/student/dashboard')}
+                    className="text-sm text-red-700 underline hover:text-red-900"
+                  >
+                    Add contacts on Dashboard
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Each session is 60 minutes. Grayed out slots are unavailable.
-                </p>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Notes (Optional)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any specific topics you'd like to discuss..."
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
-            </div>
-
-            {meetingType === 'in-person' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-blue-900">In-Person Location</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Student Counseling Center, Main Campus Building, 2nd Floor, Room 204
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {meetingType === 'virtual' && (
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Video className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-purple-900">Virtual Meeting</p>
-                    <p className="text-sm text-purple-700 mt-1">
-                      A meeting link will be sent to your email before the session
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting || !selectedCounselor || !selectedDate || !selectedTime}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {submitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Scheduling...
-                </>
               ) : (
-                <>
-                  <Calendar className="w-5 h-5" />
-                  Schedule Session
-                </>
+                <div className="space-y-3">
+                  {emergencyContacts.map((contact) => (
+                    <div key={contact.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-gray-900 text-sm">{contact.contact_name}</p>
+                        {contact.is_primary && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Primary</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">{contact.contact_relationship}</p>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <Phone className="h-3 w-3 mr-1" />{contact.phone_number}
+                      </div>
+                      {contact.email && (
+                        <div className="flex items-center text-xs text-gray-600 mt-1">
+                          <Mail className="h-3 w-3 mr-1" />{contact.email}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
-            </button>
-          </form>
+            </div>
+
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-5">
+              <div className="flex items-start">
+                <AlertTriangle className="h-6 w-6 text-red-600 mr-3 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-red-900 mb-2">In Crisis?</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Kenya Red Cross: 1199</span></div>
+                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Befrienders Kenya: 0722 178 177</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
