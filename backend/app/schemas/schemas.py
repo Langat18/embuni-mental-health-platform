@@ -1,62 +1,42 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 from app.models.models import UserRole, TicketStatus, CrisisLevel
-import re
 
 
-class UserBase(BaseModel):
+class StudentRegister(BaseModel):
     email: EmailStr
+    password: str
     full_name: str
     phone_number: Optional[str] = None
+    residence_status: Optional[str] = None  # "on_campus" | "off_campus"
 
 
-class StudentRegister(UserBase):
-    password: str
-    student_id: str
-    course_of_study: Optional[str] = None
-    year_of_study: Optional[str] = None
-    kin_name: Optional[str] = None
-    kin_relationship: Optional[str] = None
-    kin_email: Optional[EmailStr] = None
-    kin_phone_number: Optional[str] = None
-
-    @validator('email')
-    def validate_student_email(cls, v):
-        pattern = r'^\d+@student\.embuni\.ac\.ke$'
-        if not re.match(pattern, v):
-            raise ValueError('Email must be in format: studentID@student.embuni.ac.ke')
-        return v
-
-    class Config:
-        extra = "ignore"
-
-
-class CounselorRegister(UserBase):
+class CounselorRegister(BaseModel):
     username: str
+    email: EmailStr
     password: str
+    full_name: str
+    phone_number: Optional[str] = None
     staff_id: str
     department: str
-    qualifications: str
-    specializations: List[str]
-    years_of_experience: int = 0
+    qualifications: Optional[str] = None
+    specializations: Optional[List[str]] = []
+    years_of_experience: Optional[int] = 0
     bio: Optional[str] = None
-    role: UserRole = UserRole.COUNSELOR
-
-    class Config:
-        extra = "ignore"
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    username: str
+    email: str
     full_name: str
-    phone_number: Optional[str]
+    phone_number: Optional[str] = None
     role: UserRole
     is_active: bool
     is_verified: bool
@@ -75,28 +55,20 @@ class Token(BaseModel):
 class TicketCreate(BaseModel):
     category: str
     initial_message: str
-    crisis_level: CrisisLevel = CrisisLevel.NONE
-
-
-class TicketUpdate(BaseModel):
-    status: Optional[TicketStatus] = None
+    crisis_level: Optional[str] = "none"
     counselor_id: Optional[int] = None
-    crisis_level: Optional[CrisisLevel] = None
 
 
 class TicketResponse(BaseModel):
     id: int
     ticket_number: str
-    student_id: int
-    counselor_id: Optional[int]
     category: str
     status: TicketStatus
     crisis_level: CrisisLevel
-    priority: int
-    initial_message: Optional[str] = None
+    initial_message: Optional[str]
     created_at: datetime
-    student: Optional[UserResponse] = None
-    counselor: Optional[UserResponse] = None
+    assigned_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -113,7 +85,6 @@ class MessageResponse(BaseModel):
     message: str
     is_read: bool
     created_at: datetime
-    sender: UserResponse
 
     class Config:
         from_attributes = True
@@ -122,7 +93,7 @@ class MessageResponse(BaseModel):
 class NoteCreate(BaseModel):
     counselor_note: str
     tags: Optional[List[str]] = []
-    is_private: bool = True
+    is_private: Optional[bool] = True
 
 
 class NoteResponse(BaseModel):
@@ -141,8 +112,8 @@ class EmergencyContactCreate(BaseModel):
     contact_name: str
     contact_relationship: str
     phone_number: str
-    email: Optional[EmailStr] = None
-    is_primary: bool = False
+    email: Optional[str] = None
+    is_primary: Optional[bool] = False
 
 
 class EmergencyContactResponse(BaseModel):
@@ -159,83 +130,27 @@ class EmergencyContactResponse(BaseModel):
         from_attributes = True
 
 
-class AssessmentCreate(BaseModel):
-    assessment_type: str
-    score: int
-    severity_level: str
-    responses: str
-
-
-class AssessmentResponse(BaseModel):
-    id: int
-    student_id: int
-    assessment_type: str
-    score: int
-    severity_level: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
 class ScheduleCreate(BaseModel):
     counselor_id: int
-    ticket_id: Optional[int] = None
     scheduled_at: datetime
-    duration_minutes: int = 60
-    meeting_type: str = "in-person"
+    duration_minutes: Optional[int] = 60
+    meeting_type: Optional[str] = "in-person"
     meeting_link: Optional[str] = None
     notes: Optional[str] = None
+    ticket_id: Optional[int] = None
 
 
 class ScheduleResponse(BaseModel):
     id: int
     student_id: int
     counselor_id: int
-    ticket_id: Optional[int]
     scheduled_at: datetime
     duration_minutes: int
     meeting_type: str
     meeting_link: Optional[str]
     status: str
     notes: Optional[str]
-    rating: Optional[int] = None
-    feedback: Optional[str] = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    student: Optional[UserResponse] = None
-    counselor: Optional[UserResponse] = None
-
-    class Config:
-        from_attributes = True
-
-
-class RatingCreate(BaseModel):
-    rating: int = Field(..., ge=1, le=5)
-    feedback: Optional[str] = Field(None, max_length=1000)
-
-
-class RatingResponse(BaseModel):
-    success: bool
-    message: str
-    schedule_id: int
-    rating: int
-
-    class Config:
-        from_attributes = True
-
-
-class CounselorProfileResponse(BaseModel):
-    id: int
-    user_id: int
-    staff_id: str
-    department: str
-    qualifications: Optional[str]
-    specializations: Optional[List[str]]
-    years_of_experience: int
-    bio: Optional[str]
-    is_available: bool
-    max_active_tickets: int
 
     class Config:
         from_attributes = True
