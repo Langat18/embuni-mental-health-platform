@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MessageSquare, LogOut, Menu, X, Plus, Search,
-  AlertTriangle, Clock, User, Filter
+  AlertTriangle, Clock, User, Filter, Calendar
 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -97,8 +97,6 @@ const StudentTicketsPage = () => {
       <nav className="bg-white shadow-md border-b sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-
-            {/* FIX: university logo instead of Shield icon */}
             <div className="flex items-center gap-2">
               <img src="/assets/images/embunilogo.png" alt="University of Embu" className="h-12 w-12 object-contain" />
               <span className="text-2xl font-bold text-gray-900">Embuni Counseling</span>
@@ -205,7 +203,7 @@ const StudentTicketsPage = () => {
         ) : (
           <div className="grid gap-4">
             {filteredTickets.map((ticket) => (
-              <Link key={ticket.id} to={`/student/chat/${ticket.id}`} className="block bg-white rounded-lg shadow-sm border hover:border-blue-500 hover:shadow-md transition-all p-6">
+              <div key={ticket.id} className="bg-white rounded-lg shadow-sm border hover:border-blue-300 hover:shadow-md transition-all p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -220,7 +218,6 @@ const StudentTicketsPage = () => {
                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${getStatusColor(ticket.status)}`}>
                       {ticket.status.replace('_', ' ')}
                     </span>
-                    {/* FIX: guard against null crisis_level */}
                     {ticket.crisis_level && ticket.crisis_level !== 'none' && (
                       <span className={`text-xs px-3 py-1 rounded-full font-medium ${getCrisisColor(ticket.crisis_level)}`}>
                         {ticket.crisis_level}
@@ -228,6 +225,7 @@ const StudentTicketsPage = () => {
                     )}
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <User className="h-4 w-4" />
@@ -244,12 +242,30 @@ const StudentTicketsPage = () => {
                     </div>
                   )}
                 </div>
+
                 {ticket.initial_message && (
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-sm text-gray-600 line-clamp-2">{ticket.initial_message}</p>
                   </div>
                 )}
-              </Link>
+
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100">
+                  <Link
+                    to={`/student/chat/${ticket.id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Open Chat →
+                  </Link>
+                  {['new', 'assigned', 'active'].includes(ticket.status) && (
+                    <button
+                      onClick={() => navigate(`/student/schedule?category=${encodeURIComponent(ticket.category)}`)}
+                      className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      Book Session →
+                    </button>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}

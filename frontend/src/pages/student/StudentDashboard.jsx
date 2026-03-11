@@ -40,7 +40,6 @@ const StudentDashboard = () => {
     try {
       const headers = getAuthHeaders();
 
-      // FIX: removed Math.random() fallback — only fetch tip when user.id is known
       const requests = [
         axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, { headers }),
         axios.get(`${API_BASE_URL}/api/emergency-contacts/`, { headers }),
@@ -150,8 +149,6 @@ const StudentDashboard = () => {
       <nav className="bg-white shadow-md border-b sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-
-            {/* FIX: university logo instead of Shield icon */}
             <div className="flex items-center gap-2">
               <img src="/assets/images/embunilogo.png" alt="University of Embu" className="h-12 w-12 object-contain" />
               <span className="text-2xl font-bold text-gray-900">Embuni Counseling</span>
@@ -280,7 +277,7 @@ const StudentDashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {tickets.slice(0, 3).map((ticket) => (
-                    <Link key={ticket.id} to={`/student/chat/${ticket.id}`} className="block p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                    <div key={ticket.id} className="p-4 border rounded-lg hover:border-blue-300 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -288,7 +285,6 @@ const StudentDashboard = () => {
                             <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
                               {ticket.status.replace('_', ' ')}
                             </span>
-                            {/* FIX: guard against null crisis_level */}
                             {ticket.crisis_level && ticket.crisis_level !== 'none' && (
                               <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
                                 {ticket.crisis_level}
@@ -304,7 +300,24 @@ const StudentDashboard = () => {
                           {new Date(ticket.created_at).toLocaleDateString()}
                         </div>
                       </div>
-                    </Link>
+
+                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
+                        <Link
+                          to={`/student/chat/${ticket.id}`}
+                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Open Chat →
+                        </Link>
+                        {['new', 'assigned', 'active'].includes(ticket.status) && (
+                          <button
+                            onClick={() => navigate(`/student/schedule?category=${encodeURIComponent(ticket.category)}`)}
+                            className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                          >
+                            Book Session →
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -359,8 +372,9 @@ const StudentDashboard = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  {/* keep small shield icon here — it's inside a card, not the navbar */}
-                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
                   Emergency Contacts
                 </h2>
                 <button onClick={() => setShowAddContact(!showAddContact)} className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">

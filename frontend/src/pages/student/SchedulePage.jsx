@@ -1,31 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Calendar, Clock, User, CheckCircle, AlertCircle,
-  Video, MapPin, Phone, Mail, AlertTriangle
+  ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle,
+  Video, MapPin, Phone, Mail, AlertTriangle, Sparkles
 } from 'lucide-react';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const CATEGORIES = [
+  'Academic Stress',
+  'Anxiety',
+  'Depression',
+  'Relationship Issues',
+  'Family Problems',
+  'Grief & Loss',
+  'Career Counseling',
+  'Financial Stress',
+  'Substance Use',
+  'Self-Esteem',
+  'Trauma',
+  'Other',
+];
 
 const SchedulePage = () => {
   const navigate = useNavigate();
-  const [counselors, setCounselors] = useState([]);
-  const [selectedCounselor, setSelectedCounselor] = useState('');
+  const [searchParams] = useSearchParams();
+  const categoryFromURL = searchParams.get('category');
+
+  const [category, setCategory] = useState(categoryFromURL || '');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [meetingType, setMeetingType] = useState('in-person');
   const [notes, setNotes] = useState('');
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [counselors, setCounselors] = useState([]);
+  const [selectedCounselor, setSelectedCounselor] = useState('');
   const [bookedSlots, setBookedSlots] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [loadingContacts, setLoadingContacts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [emergencyContacts, setEmergencyContacts] = useState([]);
-  const [loadingContacts, setLoadingContacts] = useState(true);
-  const [suggestedCounselor, setSuggestedCounselor] = useState(null);
 
   const timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00'
   ];
+
+  const token = () => localStorage.getItem('token');
+
+  const readyToSuggest = category && selectedDate && selectedTime && meetingType;
 
   useEffect(() => {
     fetchCounselors();
@@ -37,39 +64,50 @@ const SchedulePage = () => {
   }, [selectedCounselor, selectedDate]);
 
   useEffect(() => {
-    if (counselors.length > 0 && !suggestedCounselor) {
-      setSuggestedCounselor(counselors[0]);
+    if (readyToSuggest) fetchSuggestions();
+  }, [category, selectedDate, selectedTime, meetingType]);
+
+  const fetchSuggestions = async () => {
+    setLoadingSuggestions(true);
+    setSuggestions([]);
+    setSelectedCounselor('');
+    try {
+      const params = new URLSearchParams({ category, limit: 3 });
+      const res = await fetch(`${API}/api/counselors/suggest?${params}`, {
+        headers: { Authorization: `Bearer ${token()}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSuggestions(data);
+        if (data.length > 0) setSelectedCounselor(String(data[0].id));
+      }
+    } catch (err) {
+      console.error('Failed to fetch suggestions:', err);
+    } finally {
+      setLoadingSuggestions(false);
     }
-  }, [counselors]);
+  };
 
   const fetchCounselors = async () => {
-    setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/counselors/available`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API}/api/counselors/available`, {
+        headers: { Authorization: `Bearer ${token()}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setCounselors(data);
-      }
-    } catch (error) {
-      console.error('Error fetching counselors:', error);
-    } finally {
-      setLoading(false);
+      if (res.ok) setCounselors(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch counselors:', err);
     }
   };
 
   const fetchEmergencyContacts = async () => {
     setLoadingContacts(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/emergency-contacts/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API}/api/emergency-contacts/`, {
+        headers: { Authorization: `Bearer ${token()}` }
       });
-      if (response.ok) setEmergencyContacts(await response.json());
-    } catch (error) {
-      console.error('Error fetching emergency contacts:', error);
+      if (res.ok) setEmergencyContacts(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch emergency contacts:', err);
     } finally {
       setLoadingContacts(false);
     }
@@ -77,75 +115,64 @@ const SchedulePage = () => {
 
   const fetchBookedSlots = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/schedules/booked-slots?counselor_id=${selectedCounselor}&date=${selectedDate}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
+      const res = await fetch(
+        `${API}/api/schedules/booked-slots?counselor_id=${selectedCounselor}&date=${selectedDate}`,
+        { headers: { Authorization: `Bearer ${token()}` } }
       );
-      if (response.ok) setBookedSlots(await response.json());
-    } catch (error) {
-      console.error('Error fetching booked slots:', error);
+      if (res.ok) setBookedSlots(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch booked slots:', err);
     }
   };
 
-  const isSlotBooked = (time) => {
-    return bookedSlots.some(slot => {
-      const slotDate = new Date(slot.scheduled_at);
-      const slotTime = slotDate.toTimeString().substring(0, 5);
-      return slotTime === time;
-    });
-  };
+  const isSlotBooked = (time) =>
+    bookedSlots.some(slot => new Date(slot.scheduled_at).toTimeString().substring(0, 5) === time);
 
-  const isSlotPast = (date, time) => {
-    const slotDateTime = new Date(`${date}T${time}`);
-    return slotDateTime < new Date();
-  };
+  const isSlotPast = (date, time) => new Date(`${date}T${time}`) < new Date();
 
   const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
   };
 
   const getMaxDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 30);
-    return maxDate.toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCounselor || !selectedDate || !selectedTime) {
+    if (!selectedCounselor || !selectedDate || !selectedTime || !category) {
       setError('Please fill in all required fields');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/schedules/`, {
+      const res = await fetch(`${API}/api/schedules/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token()}`
         },
         body: JSON.stringify({
           counselor_id: parseInt(selectedCounselor),
-          scheduled_at: scheduledAt,
+          scheduled_at: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
           duration_minutes: 60,
           meeting_type: meetingType,
           notes: notes || null
         })
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to schedule appointment');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Failed to schedule appointment');
       }
       setSuccess(true);
       setTimeout(() => navigate('/student/dashboard'), 2000);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -191,7 +218,7 @@ const SchedulePage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Schedule a Session</h2>
-                  <p className="text-gray-600">Book an appointment with a counselor</p>
+                  <p className="text-gray-600">Tell us what you need and when — we'll find the right counselor for you</p>
                 </div>
               </div>
 
@@ -202,82 +229,42 @@ const SchedulePage = () => {
                 </div>
               )}
 
-              {suggestedCounselor && !selectedCounselor && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900 mb-1">Suggested for you</p>
-                  <p className="text-sm text-blue-700">
-                    <strong>{suggestedCounselor.full_name}</strong> — {suggestedCounselor.department}
-                  </p>
-                  {suggestedCounselor.specializations?.length > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Specializes in: {suggestedCounselor.specializations.slice(0, 3).join(', ')}
-                    </p>
-                  )}
-                  <button
-                    onClick={() => setSelectedCounselor(String(suggestedCounselor.id))}
-                    className="mt-2 text-xs font-semibold text-blue-700 underline hover:text-blue-900"
-                  >
-                    Book with {suggestedCounselor.full_name}
-                  </button>
-                </div>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* Step 1 — What's bothering you */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Counselor <span className="text-red-500">*</span>
+                    What would you like to talk about? <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={selectedCounselor || ''}
-                    onChange={(e) => setSelectedCounselor(e.target.value)}
+                    value={category}
+                    onChange={(e) => { setCategory(e.target.value); setSuggestions([]); setSelectedCounselor(''); }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     required
                   >
-                    <option value="">Choose a counselor...</option>
-                    {counselors.map((counselor) => (
-                      <option key={counselor.id} value={counselor.id}>
-                        {counselor.full_name} - {counselor.department}
-                        {suggestedCounselor?.id === counselor.id ? ' (Suggested)' : ''}
-                      </option>
+                    <option value="">Select a concern...</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-
-                  {selectedCounselor && (
-                    <div className="mt-3 p-4 bg-blue-50 rounded-lg">
-                      {(() => {
-                        const selected = counselors.find(c => c.id === parseInt(selectedCounselor));
-                        return selected ? (
-                          <div>
-                            <p className="font-medium text-blue-900">{selected.full_name}</p>
-                            <p className="text-sm text-blue-700 mt-1">{selected.bio}</p>
-                            <p className="text-sm text-blue-600 mt-2">
-                              <strong>Specializations:</strong> {selected.specializations.join(', ')}
-                            </p>
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
                 </div>
 
+                {/* Step 2 — Date & Meeting type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date <span className="text-red-500">*</span>
+                      Preferred Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
                       value={selectedDate}
-                      onChange={(e) => {
-                        setSelectedDate(e.target.value);
-                        setSelectedTime('');
-                      }}
+                      onChange={(e) => { setSelectedDate(e.target.value); setSelectedTime(''); setSuggestions([]); setSelectedCounselor(''); }}
                       min={getMinDate()}
                       max={getMaxDate()}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">Sessions can be booked 1-30 days in advance</p>
+                    <p className="text-xs text-gray-500 mt-1">Sessions can be booked 1–30 days in advance</p>
                   </div>
 
                   <div>
@@ -286,7 +273,7 @@ const SchedulePage = () => {
                     </label>
                     <select
                       value={meetingType}
-                      onChange={(e) => setMeetingType(e.target.value)}
+                      onChange={(e) => { setMeetingType(e.target.value); setSuggestions([]); setSelectedCounselor(''); }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     >
                       <option value="in-person">In-Person</option>
@@ -295,56 +282,149 @@ const SchedulePage = () => {
                   </div>
                 </div>
 
-                {selectedDate && selectedCounselor && (
+                {/* Step 3 — Time slot */}
+                {selectedDate && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Available Time Slots <span className="text-red-500">*</span>
+                      Preferred Time <span className="text-red-500">*</span>
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       {timeSlots.map((time) => {
-                        const isBooked = isSlotBooked(time);
                         const isPast = isSlotPast(selectedDate, time);
-                        const isDisabled = isBooked || isPast;
                         return (
                           <button
                             key={time}
                             type="button"
-                            onClick={() => !isDisabled && setSelectedTime(time)}
-                            disabled={isDisabled}
+                            onClick={() => { if (!isPast) { setSelectedTime(time); setSuggestions([]); setSelectedCounselor(''); } }}
+                            disabled={isPast}
                             className={`py-3 px-4 rounded-lg border-2 font-medium transition ${
                               selectedTime === time
                                 ? 'bg-blue-600 text-white border-blue-600'
-                                : isDisabled
+                                : isPast
                                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                 : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
                             }`}
                           >
-                            <Clock className="w-4 h-4 inline mr-2" />
+                            <Clock className="w-4 h-4 inline mr-1" />
                             {time}
-                            {isBooked && <span className="block text-xs mt-1">Booked</span>}
-                            {isPast && !isBooked && <span className="block text-xs mt-1">Past</span>}
+                            {isPast && <span className="block text-xs mt-1">Past</span>}
                           </button>
                         );
                       })}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Each session is 60 minutes. Grayed out slots are unavailable.
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">Each session is 60 minutes.</p>
                   </div>
                 )}
 
+                {/* Step 4 — Notes */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional Notes (Optional)
+                    Additional Notes <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Any specific topics you'd like to discuss..."
-                    rows={4}
+                    placeholder="Anything specific you'd like the counselor to know beforehand..."
+                    rows={3}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
+
+                {/* Step 5 — Suggestions appear after all inputs are filled */}
+                {readyToSuggest && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-blue-500" />
+                      <p className="text-sm font-semibold text-gray-700">
+                        Recommended counselors for you
+                      </p>
+                    </div>
+
+                    {loadingSuggestions ? (
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+                        <p className="text-sm text-blue-700">Finding the best match...</p>
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      <div className="space-y-3">
+                        {suggestions.map((s) => (
+                          <div
+                            key={s.id}
+                            onClick={() => setSelectedCounselor(String(s.id))}
+                            className={`p-4 border-2 rounded-lg cursor-pointer transition ${
+                              selectedCounselor === String(s.id)
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white hover:border-blue-300'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-semibold text-gray-900">{s.full_name}</p>
+                                  {selectedCounselor === String(s.id) && (
+                                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Selected</span>
+                                  )}
+                                </div>
+                                {s.match_reasons.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {s.match_reasons.map((reason, i) => (
+                                      <span
+                                        key={i}
+                                        className="text-xs bg-gray-100 border border-gray-200 text-gray-600 px-2 py-0.5 rounded-full"
+                                      >
+                                        {reason}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
+                        No suggestions found. Please select a counselor manually below.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Step 6 — Manual counselor override */}
+                {readyToSuggest && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {suggestions.length > 0 ? 'Or choose a different counselor' : 'Select a Counselor'} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedCounselor}
+                      onChange={(e) => setSelectedCounselor(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      required
+                    >
+                      <option value="">Choose a counselor...</option>
+                      {counselors.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.full_name}
+                          {suggestions.find(s => s.id === c.id) ? ' ★ Recommended' : ''}
+                        </option>
+                      ))}
+                    </select>
+
+                    {selectedCounselor && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        {(() => {
+                          const booked = bookedSlots.some(slot =>
+                            new Date(slot.scheduled_at).toTimeString().substring(0, 5) === selectedTime
+                          );
+                          return booked
+                            ? <span className="text-red-500">This counselor is not available at {selectedTime} on the selected date. Please pick another time or counselor.</span>
+                            : <span className="text-green-600">This counselor is available at your selected time.</span>;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {meetingType === 'in-person' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -380,7 +460,7 @@ const SchedulePage = () => {
                     <div>
                       <p className="font-medium text-yellow-900">Need help choosing a counselor?</p>
                       <p className="text-sm text-yellow-800 mt-1">
-                        Visit the Reception Desk at the Counseling Center for a guided referral — Main Campus, 2nd Floor, Room 200.
+                        Visit the Reception Desk at the Counseling Center — Main Campus, 2nd Floor, Room 200.
                       </p>
                       <a
                         href="tel:+254712345678"
@@ -394,12 +474,12 @@ const SchedulePage = () => {
 
                 <button
                   type="submit"
-                  disabled={submitting || !selectedCounselor || !selectedDate || !selectedTime}
+                  disabled={submitting || !selectedCounselor || !selectedDate || !selectedTime || !category}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Scheduling...
                     </>
                   ) : (
@@ -467,8 +547,14 @@ const SchedulePage = () => {
                 <div>
                   <h3 className="font-bold text-red-900 mb-2">In Crisis?</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Kenya Red Cross: 1199</span></div>
-                    <div className="flex items-center text-red-900"><Phone className="h-4 w-4 mr-2" /><span className="font-semibold">Befrienders Kenya: 0722 178 177</span></div>
+                    <div className="flex items-center text-red-900">
+                      <Phone className="h-4 w-4 mr-2" />
+                      <span className="font-semibold">Kenya Red Cross: 1199</span>
+                    </div>
+                    <div className="flex items-center text-red-900">
+                      <Phone className="h-4 w-4 mr-2" />
+                      <span className="font-semibold">Befrienders Kenya: 0722 178 177</span>
+                    </div>
                   </div>
                 </div>
               </div>
