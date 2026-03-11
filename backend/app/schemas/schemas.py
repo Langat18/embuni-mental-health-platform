@@ -9,7 +9,7 @@ class StudentRegister(BaseModel):
     password: str
     full_name: str
     phone_number: Optional[str] = None
-    residence_status: Optional[str] = None  # "on_campus" | "off_campus"
+    residence_status: Optional[str] = None
 
 
 class CounselorRegister(BaseModel):
@@ -57,6 +57,10 @@ class TicketCreate(BaseModel):
     initial_message: str
     crisis_level: Optional[str] = "none"
     counselor_id: Optional[int] = None
+
+
+class TicketUpdate(BaseModel):
+    crisis_level: Optional[str] = None
 
 
 class TicketResponse(BaseModel):
@@ -151,6 +155,20 @@ class ScheduleResponse(BaseModel):
     status: str
     notes: Optional[str]
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CounselorListResponse(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    department: str
+    specializations: List[str]
+    years_of_experience: int
+    bio: str
+    is_available: bool
 
     class Config:
         from_attributes = True
